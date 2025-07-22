@@ -5,6 +5,20 @@ import sys
 from packaging import version
 from pathlib import Path
 from setuptools import Command, Extension, setup
+from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+
+class bdist_wheel(_bdist_wheel):
+    def finalize_options(self):
+        _bdist_wheel.finalize_options(self)
+        # Mark as platform-specific wheel
+        self.root_is_pure = False
+        
+    def get_tag(self):
+        python, abi, plat = _bdist_wheel.get_tag(self)
+        # Replace 'linux_x86_64' with 'manylinux' tag
+        if plat.startswith('linux'):
+            plat = 'manylinux2014_x86_64'
+        return python, abi, plat
 
 CYTHON_MIN_VERSION = version.parse("3.0.10")
 
@@ -129,6 +143,14 @@ def get_extensions():
 if __name__ == "__main__":
     setup(
         ext_modules=get_extensions(),
-        cmdclass={"clean": clean},
-        version=__version__
+        version=__version__,
+        zip_safe=False,
+        cmdclass={"clean": clean, 'bdist_wheel': bdist_wheel},
+        options={
+            'bdist_wheel': {
+                'universal': False,  # Platform-specific wheel
+                'plat_name': 'manylinux2014_x86_64' if sys.platform == 'linux' else None,
+            }
+        },
+        platforms=['Linux', 'MacOS', 'Windows'],
     )
