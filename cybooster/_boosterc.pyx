@@ -137,7 +137,7 @@ cdef class BoosterClassifier:
             direct_link=self.direct_link, verbose=self.verbose,
             seed=self.seed, backend=self.backend, 
             activation=self.activation, weights_distr=self.weights_distr,
-            obj=obj
+            obj=self.obj
         )
         return self
     
