@@ -12,7 +12,7 @@ here = Path(__file__).parent
 os.chdir(here)
 
 # Get version from package
-__version__ = "0.1.2"  # Version bump to 0.1.2
+__version__ = "0.1.3"  # Version bump to 0.1.2
 
 # Platform-specific configurations
 extra_compile_args = []
