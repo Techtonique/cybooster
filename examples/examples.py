@@ -24,7 +24,10 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 classifier = BoosterClassifier(obj=LinearRegression(), n_estimators=100, learning_rate=0.1,
                                n_hidden_features=10, verbose=1, seed=42)
 start = time()
-classifier.fit(X_train, y_train)
+try: 
+    classifier.fit(X_train, y_train)
+except Exception as e: # this is for Windows users
+    y_train = y_train.astype('int32')
 y_pred = classifier.predict(X_test)
 print(f"Elapsed: {time() - start} s")
 accuracy = accuracy_score(y_test, y_pred)
@@ -35,7 +38,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 classifier = BoosterClassifier(obj=LinearRegression(), n_estimators=100, learning_rate=0.1,
                                n_hidden_features=10, verbose=1, seed=42)
 start = time()
-classifier.fit(X_train, y_train)
+try:
+    classifier.fit(X_train, y_train)
+except Exception as e: # this is for Windows users
+    y_train = y_train.astype('int32')
+    classifier.fit(X_train, y_train)
 y_pred = classifier.predict(X_test)
 print(f"Elapsed: {time() - start} s")
 accuracy = accuracy_score(y_test, y_pred)
@@ -46,7 +53,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 classifier = BoosterClassifier(obj=LinearRegression(), n_estimators=100, learning_rate=0.1,
                                n_hidden_features=10, verbose=1, seed=42)
 start = time()
-classifier.fit(X_train, y_train)
+try: 
+    classifier.fit(X_train, y_train)
+except Exception as e:
+    y_train = y_train.astype('int32')
+    classifier.fit(X_train, y_train)
 y_pred = classifier.predict(X_test)
 print(f"Elapsed: {time() - start} s")
 accuracy = accuracy_score(y_test, y_pred)
@@ -57,7 +68,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 classifier = BoosterClassifier(obj=LinearRegression(), n_estimators=100, learning_rate=0.1,
                                n_hidden_features=10, verbose=1, seed=42)
 start = time()
-classifier.fit(X_train, y_train)
+try: 
+    classifier.fit(X_train, y_train)
+except Exception as e:
+    y_train = y_train.astype('int32')
+    classifier.fit(X_train, y_train)
 y_pred = classifier.predict(X_test)
 print(f"Elapsed: {time() - start} s")
 accuracy = accuracy_score(y_test, y_pred)
