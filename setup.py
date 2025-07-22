@@ -79,7 +79,7 @@ setup(
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
-        "Programming Language :: Python :: 3.7+",
+        "Programming Language :: Python :: 3.9+",
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
@@ -104,7 +104,7 @@ setup(
         "tqdm>=4.50.0",
         "pandas>=1.1.0",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     package_data={
         'cybooster': ['*.pxd', '*.pyx'],  # Include all necessary files
     },
