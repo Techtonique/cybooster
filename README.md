@@ -5,7 +5,24 @@
 
 Each base learner is augmented with a randomized neural network (a generalization of [https://www.researchgate.net/publication/346059361_LSBoost_gradient_boosted_penalized_nonlinear_least_squares](https://www.researchgate.net/publication/346059361_LSBoost_gradient_boosted_penalized_nonlinear_least_squares) to any base learner), which allows the model to learn complex patterns in the data. The library supports both classification and regression tasks, making it versatile for various machine learning applications.
 
-`CyBooster` is born from `mlsauce`, that might be difficult to install on some systems (to the best of my knowledge, works best when install from GitHub). This version will also be more GPU friendly, thanks to JAX. 
+`CyBooster` is born from `mlsauce`, that might be difficult to install on some systems. This version will also be more GPU friendly, thanks to JAX. 
+
+
+## Installation
+
+To install `CyBooster`, you can use pip:
+
+```bash
+pip install cybooster --verbose
+```
+
+From GitHub:
+
+```bash
+pip install git+https://github.com/Techtonique/cybooster.git --verbose
+```
+
+## Usage
 
 ```python 
 from cybooster import BoosterClassifier, BoosterRegressor
