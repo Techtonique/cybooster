@@ -13,6 +13,7 @@ from scipy import sparse
 
 cdef class BoosterRegressor:
     cdef object obj
+    cdef object fit_obj
     cdef int n_estimators
     cdef double learning_rate
     cdef int n_hidden_features
@@ -83,6 +84,7 @@ cdef class BoosterRegressor:
 
 cdef class BoosterClassifier:
     cdef object obj
+    cdef object fit_obj
     cdef int n_estimators
     cdef double learning_rate
     cdef int n_hidden_features
