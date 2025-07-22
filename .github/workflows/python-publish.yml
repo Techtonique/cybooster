@@ -48,7 +48,7 @@ jobs:
     - name: Build package
       run: |
         python setup.py build_ext --inplace
-        python setup.py sdist bdist_wheel
+        python setup.py sdist
 
     - name: Run examples
       continue-on-error: ${{ matrix.os != 'ubuntu-latest' }}
