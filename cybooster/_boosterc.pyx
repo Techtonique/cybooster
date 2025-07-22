@@ -236,7 +236,7 @@ def activation_choice(x):
 
 # 1 - 1 fit classifier ----- 
 
-def fit_booster_classifier(double[:,::1] X, np.int64_t[:] y, 
+def fit_booster_classifier(double[:,::1] X, long int[:] y, 
                            int n_estimators=100, double learning_rate=0.1, 
                            int n_hidden_features=5, double reg_lambda=0.1, 
                            double alpha=0.5, 
@@ -261,9 +261,7 @@ def fit_booster_classifier(double[:,::1] X, np.int64_t[:] y,
   
   # Check dtype on Windows (optional but user-friendly)
   if sys.platform == 'win32' and y.dtype != np.int32:
-      raise ValueError(
-          "On Windows, y must be int32. Use y.astype('int32')"
-      )
+      y = y.astype(np.int32)
   
   n = X.shape[0]
   p = X.shape[1]
