@@ -4,6 +4,7 @@
 
 import numpy as np
 import jax.numpy as jnp
+import sys 
 cimport numpy as np
 from jax import device_put
 from copy import deepcopy
@@ -235,7 +236,7 @@ def activation_choice(x):
 
 # 1 - 1 fit classifier ----- 
 
-def fit_booster_classifier(double[:,::1] X, long int[:] y, 
+def fit_booster_classifier(double[:,::1] X, np.int32_t[:] y, 
                            int n_estimators=100, double learning_rate=0.1, 
                            int n_hidden_features=5, double reg_lambda=0.1, 
                            double alpha=0.5, 
@@ -258,6 +259,11 @@ def fit_booster_classifier(double[:,::1] X, long int[:] y,
   cdef double[:,::1] Y, X_, E, W_i, h_i, hh_i, hidden_layer_i, hhidden_layer_i
   cdef double current_error
   
+  # Check dtype on Windows (optional but user-friendly)
+  if sys.platform == 'win32' and y.dtype != np.int32:
+      raise ValueError(
+          "On Windows, y must be int32. Use y.astype('int32')"
+      )
   
   n = X.shape[0]
   p = X.shape[1]
