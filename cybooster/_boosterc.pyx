@@ -236,7 +236,7 @@ def activation_choice(x):
 
 # 1 - 1 fit classifier ----- 
 
-def fit_booster_classifier(double[:,::1] X, np.int32_t[:] y, 
+def fit_booster_classifier(double[:,::1] X, np.int64_t[:] y, 
                            int n_estimators=100, double learning_rate=0.1, 
                            int n_hidden_features=5, double reg_lambda=0.1, 
                            double alpha=0.5, 
