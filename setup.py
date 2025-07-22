@@ -12,7 +12,7 @@ here = Path(__file__).parent
 os.chdir(here)
 
 # Get version from package
-__version__ = "0.1.1"  
+__version__ = "0.1.2"  # Version bump to 0.1.2
 
 # Platform-specific configurations
 extra_compile_args = []
@@ -41,7 +41,6 @@ elif sys.platform == 'win32':
         extra_link_args.extend(['/OPT:REF', '/OPT:ICF'])
 
 else:  # Linux
-
     try:
         import subprocess
         subprocess.check_call(['gcc', '-v'])
@@ -53,7 +52,7 @@ else:  # Linux
 # Set the source file using pathlib for cross-platform path handling
 ext_modules = [
     Extension(
-        name="cybooster._boosterc",  # Use full dotted path
+        name="cybooster._boosterc",
         sources=[str(here / "cybooster" / "_boosterc.pyx")],
         include_dirs=[numpy.get_include()],
         define_macros=define_macros,
@@ -85,12 +84,14 @@ setup(
     license="BSD-3-Clause",
     keywords="gradient boosting cython machine learning",
     packages=["cybooster"],
-    package_dir={"": str(here)},  # Important for in-place builds
+    package_dir={"": str(here)},
     ext_modules=cythonize(
         ext_modules,
         compiler_directives={
             'language_level': "3",
             'embedsignature': True,
+            'boundscheck': False,
+            'wraparound': False
         },
     ),
     install_requires=[
@@ -105,7 +106,14 @@ setup(
     ],
     python_requires=">=3.9",
     package_data={
-        'cybooster': ['*.pxd', '*.pyx'],  # Include all necessary files
+        'cybooster': ['*.pxd', '*.pyx'],
     },
-    zip_safe=False,  # Important for C extensions
+    zip_safe=False,
+    options={
+        'bdist_wheel': {
+            'universal': False,
+            'plat_name': 'manylinux2014_x86_64' if sys.platform == 'linux' else None,
+        }
+    },
+    platforms=['Linux', 'MacOS', 'Windows'],
 )
