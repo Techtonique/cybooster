@@ -28,6 +28,7 @@ try:
     classifier.fit(X_train, y_train)
 except Exception as e: # this is for Windows users
     y_train = y_train.astype('int32')
+    classifier.fit(X_train, y_train)
 y_pred = classifier.predict(X_test)
 print(f"Elapsed: {time() - start} s")
 accuracy = accuracy_score(y_test, y_pred)
