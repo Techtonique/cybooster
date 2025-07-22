@@ -1,3 +1,4 @@
+import os
 import sys
 import platform
 from setuptools import setup, Extension
@@ -6,7 +7,9 @@ import numpy
 from pathlib import Path
 
 # Define base path
+# Force relative paths
 here = Path(__file__).parent
+os.chdir(here)
 
 # Get version from package
 try:
@@ -41,7 +44,7 @@ elif sys.platform == 'win32':
         extra_link_args.extend(['/OPT:REF', '/OPT:ICF'])
 
 else:  # Linux
-    
+
     try:
         import subprocess
         subprocess.check_call(['gcc', '-v'])
