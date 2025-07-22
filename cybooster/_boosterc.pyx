@@ -260,7 +260,7 @@ def fit_booster_classifier(double[:,::1] X, long int[:] y,
   cdef double current_error
   
   # Check dtype on Windows (optional but user-friendly)
-  if sys.platform == 'win32' and y.dtype != np.int32:
+  if sys.platform == 'win32' and np.asarray(y).dtype != np.int32:
       y = y.astype(np.int32)
   
   n = X.shape[0]
