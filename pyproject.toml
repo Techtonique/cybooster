@@ -1,3 +1,80 @@
 [build-system]
-requires = ["setuptools", "cython", "numpy", "jax", "jaxlib", "scikit-learn", "pandas", "tqdm"]
+requires = [
+    "setuptools>=64",
+    "setuptools-scm>=8",
+    "packaging",
+    "Cython>=3.0.10",
+    "numpy>=2.0.0",
+]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "cybooster"
+description = "A high-performance gradient boosting implementation using Cython"
+readme = "README.md"
+authors = [
+    {name = "T. Moudiki", email = "thierry.moudiki@gmail.com"}
+]
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+version = "0.1.4"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Machine Learning"
+]
+dependencies = [
+    "numpy>=2.0.0",
+    "scipy>=1.8.0",
+    "scikit-learn>=1.4.0",
+    "jax>=0.4.0",
+    "jaxlib>=0.4.0",
+    "tqdm>=4.50.0",
+    "pandas>=2.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Techtonique/cybooster"
+"Source Code" = "https://github.com/Techtonique/cybooster"
+"Bug Tracker" = "https://github.com/Techtonique/cybooster/issues"
+
+[project.optional-dependencies]
+dev = [
+    "black[jupyter]",
+    "build",
+    "Cython>=3.0.10",
+    "pytest",
+    "ruff",
+    "setuptools-scm>=8",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["cybooster*"]
+
+[tool.setuptools.package-data]
+cybooster = ["*.pxd", "*.pyx"]
+
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+select = ["E", "F", "I", "W"]
+
+[tool.setuptools_scm]

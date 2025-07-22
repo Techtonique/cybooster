@@ -1,119 +1,134 @@
 import os
-import sys
 import platform
-from setuptools import setup, Extension
-from Cython.Build import cythonize
-import numpy
+import shutil
+import sys
+from packaging import version
 from pathlib import Path
+from setuptools import Command, Extension, setup
 
-# Define base path
-# Force relative paths
-here = Path(__file__).parent
-os.chdir(here)
+CYTHON_MIN_VERSION = version.parse("3.0.10")
 
-# Get version from package
-__version__ = "0.1.3"  # Version bump to 0.1.2
+__version__ = "0.1.4"
 
-# Platform-specific configurations
-extra_compile_args = []
-extra_link_args = []
-define_macros = [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
-
-if sys.platform == 'darwin':
-    # macOS specific settings
-    extra_compile_args.extend(['-stdlib=libc++', '-mmacosx-version-min=10.15'])
-    extra_link_args.extend(['-stdlib=libc++', '-mmacosx-version-min=10.15'])
+class clean(Command):
+    user_options = [("all", "a", "")]
     
-    # Handle ARM64 architecture
-    if platform.machine() == 'arm64':
-        extra_compile_args.extend(['-arch', 'arm64'])
-        extra_link_args.extend(['-arch', 'arm64'])
-    else:
-        extra_compile_args.extend(['-arch', 'x86_64'])
-        extra_link_args.extend(['-arch', 'x86_64'])
+    def initialize_options(self):
+        self.all = True
+        self.delete_dirs = []
+        self.delete_files = []
+        
+        for root, dirs, files in os.walk("cybooster"):
+            root = Path(root)
+            for d in dirs:
+                if d == "__pycache__":
+                    self.delete_dirs.append(root / d)
+            
+            if "__pycache__" in root.name:
+                continue
+                
+            for f in (root / x for x in files):
+                ext = f.suffix
+                if ext == ".pyc" or ext == ".so":
+                    self.delete_files.append(f)
+                if ext in (".c", ".cpp"):
+                    source_file = f.with_suffix(".pyx")
+                    if source_file.exists():
+                        self.delete_files.append(f)
+        
+        build_path = Path("build")
+        if build_path.exists():
+            self.delete_dirs.append(build_path)
+    
+    def finalize_options(self):
+        pass
+    
+    def run(self):
+        for delete_dir in self.delete_dirs:
+            shutil.rmtree(delete_dir)
+        for delete_file in self.delete_files:
+            delete_file.unlink()
 
-elif sys.platform == 'win32':
-    if platform.machine().endswith('ARM64'):
-        extra_compile_args.extend(['/ARM64'])
-        extra_link_args.extend(['/ARM64'])
-    else:
-        extra_compile_args.extend(['/EHsc', '/O2'])
-        extra_link_args.extend(['/OPT:REF', '/OPT:ICF'])
+EXTENSIONS = {
+    "_boosterc": {"sources": ["cybooster/_boosterc.pyx"]},
+}
 
-else:  # Linux
+def get_module_from_sources(sources):
+    for src_path in map(Path, sources):
+        if src_path.suffix == ".pyx":
+            return ".".join(src_path.parts[:-1] + (src_path.stem,))
+    raise ValueError(f"Could not find module from sources: {sources!r}")
+
+def _check_cython_version():
+    message = f"Please install Cython with a version >= {CYTHON_MIN_VERSION}"
     try:
-        import subprocess
-        subprocess.check_call(['gcc', '-v'])
-        extra_compile_args.extend(['-O3', '-fopenmp'])
-        extra_link_args.extend(['-fopenmp'])
-    except:
-        extra_compile_args.extend(['-O3'])
+        import Cython
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(message)
+    
+    if version.parse(Cython.__version__) < CYTHON_MIN_VERSION:
+        message += f" The current version is {Cython.__version__} in {Cython.__path__}."
+        raise ValueError(message)
 
-# Set the source file using pathlib for cross-platform path handling
-ext_modules = [
-    Extension(
-        name="cybooster._boosterc",
-        sources=[str(here / "cybooster" / "_boosterc.pyx")],
-        include_dirs=[numpy.get_include()],
-        define_macros=define_macros,
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-        language="c",
+def cythonize_extensions(extensions):
+    _check_cython_version()
+    from Cython.Build import cythonize
+    
+    directives = {
+        "language_level": "3",
+        "embedsignature": True,
+        "boundscheck": False,
+        "wraparound": False
+    }
+    
+    macros = [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
+    
+    for ext in extensions:
+        if ext.define_macros is None:
+            ext.define_macros = macros
+        else:
+            ext.define_macros += macros
+    
+    return cythonize(extensions, compiler_directives=directives)
+
+def get_extensions():
+    import numpy
+    
+    numpy_includes = [numpy.get_include()]
+    extensions = []
+    
+    for config in EXTENSIONS.values():
+        name = get_module_from_sources(config["sources"])
+        include_dirs = numpy_includes + config.get("include_dirs", [])
+        
+        # Platform-specific compile args
+        extra_compile_args = []
+        if sys.platform == "darwin":
+            extra_compile_args.extend(["-stdlib=libc++", "-mmacosx-version-min=10.15"])
+            if platform.machine() == "arm64":
+                extra_compile_args.extend(["-arch", "arm64"])
+            else:
+                extra_compile_args.extend(["-arch", "x86_64"])
+        elif sys.platform == "win32":
+            extra_compile_args.extend(["/EHsc", "/O2"])
+        
+        ext = Extension(
+            name=name,
+            sources=config["sources"],
+            include_dirs=include_dirs,
+            extra_compile_args=extra_compile_args,
+            language="c",
+        )
+        extensions.append(ext)
+    
+    if "sdist" not in sys.argv and "clean" not in sys.argv:
+        extensions = cythonize_extensions(extensions)
+    
+    return extensions
+
+if __name__ == "__main__":
+    setup(
+        ext_modules=get_extensions(),
+        cmdclass={"clean": clean},
+        version=__version__
     )
-]
-
-setup(
-    name="cybooster",
-    version=__version__,
-    author="T. Moudiki",
-    author_email="thierry.moudiki@gmail.com",
-    description="A high-performance gradient boosting implementation using Cython",
-    long_description=(here / "README.md").read_text(),
-    long_description_content_type="text/markdown",
-    url="https://github.com/Techtonique/cybooster",
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: BSD License",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Operating System :: OS Independent",
-        "Topic :: Software Development :: Libraries :: Python Modules",
-    ],
-    license="BSD-3-Clause",
-    keywords="gradient boosting cython machine learning",
-    packages=["cybooster"],
-    package_dir={"": str(here)},
-    ext_modules=cythonize(
-        ext_modules,
-        compiler_directives={
-            'language_level': "3",
-            'embedsignature': True,
-            'boundscheck': False,
-            'wraparound': False
-        },
-    ),
-    install_requires=[
-        "cython>=0.29.0",
-        "numpy>=1.20.0",
-        "jax>=0.3.0",
-        "jaxlib>=0.3.0",
-        "scipy>=1.6.0",
-        "scikit-learn>=0.24.0",
-        "tqdm>=4.50.0",
-        "pandas>=1.1.0",
-    ],
-    python_requires=">=3.9",
-    package_data={
-        'cybooster': ['*.pxd', '*.pyx'],
-    },
-    zip_safe=False,
-    options={
-        'bdist_wheel': {
-            'universal': False,
-            'plat_name': 'manylinux2014_x86_64' if sys.platform == 'linux' else None,
-        }
-    },
-    platforms=['Linux', 'MacOS', 'Windows'],
-)
