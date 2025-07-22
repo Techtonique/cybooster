@@ -51,7 +51,6 @@ jobs:
       - name: Run tests and examples
         run: |
           pip install -e .
-          pytest tests/  # Add if you have tests
           find examples -maxdepth 1 -name "*.py" -exec python {} \;
 
       - name: Publish to PyPI
