@@ -12,10 +12,7 @@ here = Path(__file__).parent
 os.chdir(here)
 
 # Get version from package
-try:
-    from cybooster import __version__
-except ImportError:
-    __version__ = "0.1.0"  # fallback version
+from .cybooster import __version__
 
 # Platform-specific configurations
 extra_compile_args = []
