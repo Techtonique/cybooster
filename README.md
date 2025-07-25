@@ -1,6 +1,8 @@
 
 # `CyBooster`: A Gradient Boosting Library
 
+[![PyPI - License](https://img.shields.io/pypi/l/cybooster)](./LICENSE) [![Downloads](https://pepy.tech/badge/cybooster)](https://pepy.tech/project/cybooster) 
+
 `CyBooster` is a high-performance generic gradient boosting (any based learner can be used) library designed for classification and regression tasks. It is built on Cython (that is, C) for speed and efficiency. This version will also be more GPU friendly, thanks to JAX, making it suitable for large datasets.
 
 Each base learner is augmented with a randomized neural network (a generalization of [https://www.researchgate.net/publication/346059361_LSBoost_gradient_boosted_penalized_nonlinear_least_squares](https://www.researchgate.net/publication/346059361_LSBoost_gradient_boosted_penalized_nonlinear_least_squares) to any base learner), which allows the model to learn complex patterns in the data. The library supports both classification and regression tasks, making it versatile for various machine learning applications.
