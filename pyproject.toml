@@ -56,6 +56,14 @@ dev = [
     "pytest",
     "ruff",
     "setuptools-scm>=8",
+    "black[jupyter]",
+    "build",
+    "Cython>=3.0.10",
+    "pytest",
+    "ruff",
+    "setuptools-scm>=8",
+    "sphinx",               # ✅ add this
+    "furo",                 # ✅ optional: for dark mode
 ]
 
 [tool.setuptools]

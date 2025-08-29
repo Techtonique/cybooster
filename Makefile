@@ -29,11 +29,13 @@ help:
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
-	rm -fr build/
-	rm -fr dist/
-	rm -fr .eggs/	
+	rm -fr build/	
+	rm -fr .eggs/
 	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -fr {} +
+	find . -name '*.egg' -exec rm -rf {} +
+	find . -name '*.so' -exec rm -f {} +
+	find . -name '*.c' -exec rm -f {} +
+	find . -name '*.html' -exec rm -f {} +	
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
@@ -41,41 +43,72 @@ clean-pyc: ## remove Python file artifacts
 	find . -name '*~' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
 
-clean-test: ## remove test and coverage artifacts	
-	rm -fr htmlcov
+clean-test: ## remove test and coverage artifacts
+	rm -fr .tox/
+	rm -f .coverage
+	rm -fr htmlcov/
+	rm -fr .pytest_cache
 
 lint: ## check style with flake8
 	flake8 cybooster tests
 
-coverage: ## check code coverage quickly with the default Python	
-	coverage report --omit="venv/*,cybooster/tests/*" --show-missing
+test: ## run tests quickly with the default Python
+	python setup.py test
 
-docs: install ## generate docs		
-	#pip install black pdoc 
-	#black cybooster/* --line-length=80	
-	#find cybooster/ -name "*.py" -exec autopep8 --max-line-length=80 --in-place {} +
-	pdoc -t docs cybooster/* --output-dir cybooster-docs
+test-all: ## run tests on every Python version with tox
+	tox
+
+coverage: ## check code coverage quickly with the default Python
+	coverage run --source cybooster setup.py test
+	coverage report -m
+	coverage html
+	$(BROWSER) htmlcov/index.html
+
+docs:  ## compile the docs watching for change	 
+	pip install furo mkdocs
+	python setup.py clean
+	python setup.py build_ext --inplace
+	make -C cybooster/docs html
 	find . -name '__pycache__' -exec rm -fr {} +
+
+servedocs: docs ## compile the docs watching for change	 	
+	$(BROWSER) cybooster/docs/_build/html/index.html
+	find . -name '__pycache__' -exec rm -fr {} +
+
+build-site: docs ## export mkdocs website to a folder		
 	cp -rf cybooster-docs/* ../../Pro_Website/Techtonique.github.io/cybooster
-
-servedocs: install ## compile the docs watching for change	 	
-	#pip install black pdoc 
-	#black cybooster/* --line-length=80	
-	#find cybooster/ -name "*.py" -exec autopep8 --max-line-length=80 --in-place {} +
-	pdoc -t docs cybooster/* 
 	find . -name '__pycache__' -exec rm -fr {} +
-
-release: dist ## package and upload a release
-	pip install twine --ignore-installed
-	python3 -m twine upload --repository pypi dist/* --verbose
 
 dist: clean ## builds source and wheel package
 	python3 setup.py sdist
-	python3 setup.py bdist_wheel	
+	python3 setup.py bdist_wheel
 	ls -l dist
 
 install: clean ## install the package to the active Python's site-packages
-	uv pip install -e .
+	uv pip install -e . --verbose
 
 run-examples: ## run all examples with one command
 	find examples -maxdepth 2 -name "*.py" -exec  python3 {} \;
+
+run-booster: ## run all boosting estimators examples with one command
+	find examples -maxdepth 2 -name "*boost*.py" -exec  python3 {} \;
+
+run-lazy: ## run all lazy estimators examples with one command
+	find examples -maxdepth 2 -name "*lazy*.py" -exec  python3 {} \;
+
+docker-build: ## Build Docker image for cybooster and create dist artifacts
+	docker build -t cybooster .
+	docker run --rm -v $(PWD)/dist:/app/dist cybooster sh -c "python3 setup.py sdist bdist_wheel"
+
+docker-shell: ## Run an interactive shell inside the cybooster Docker container
+	docker run -it --rm cybooster bash
+
+docker-run-examples: ## Run all example scripts inside Docker
+	docker run --rm cybooster sh -c "uv pip install -e . && find examples -maxdepth 2 -name '*.py' -exec python3 {} \;"
+
+docker-run-booster: ## Run boosting example scripts inside Docker
+	docker run --rm cybooster sh -c "uv pip install -e . && find examples -maxdepth 2 -name '*boost*.py' -exec python3 {} \;"
+
+docker-run-lazy: ## Run lazy estimator example scripts inside Docker
+	docker run --rm cybooster sh -c "uv pip install -e . && find examples -maxdepth 2 -name '*lazy*.py' -exec python3 {} \;"
+

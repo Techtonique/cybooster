@@ -8,5 +8,5 @@ This package provides:
 
 from ._boosterc import BoosterRegressor, BoosterClassifier
 
-__all__ = ['BoosterRegressor', 'BoosterClassifier']  # Explicit exports
-__version__ = '0.1.1'  # Package version
+__all__ = ["BoosterRegressor", "BoosterClassifier"]  # Explicit exports
+__version__ = "0.1.1"  # Package version

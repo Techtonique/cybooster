@@ -1,6 +1,7 @@
 # cython: wraparound=False
 # cython: boundscheck=False
 # cython: nonecheck=False
+# cython: language_level=3
 
 import numpy as np
 import jax.numpy as jnp
@@ -12,7 +13,104 @@ from tqdm import tqdm
 from scipy.special import expit
 from scipy import sparse
 
+# Add this small trick to safely call `import_array()`
+cdef extern from *:
+    """
+    void* init_numpy() {
+        import_array();
+        return NULL;
+    }
+    """
+    void* init_numpy()
+
+# Call it at module import
+init_numpy()
+
 cdef class BoosterRegressor:
+    """Booster regressor.
+
+      Attributes:
+
+          n_estimators: int
+              number of boosting iterations.
+
+          learning_rate: float
+              controls the learning speed at training time.
+
+          n_hidden_features: int
+              number of nodes in successive hidden layers.
+
+          reg_lambda: float
+              L2 regularization parameter for successive errors in the optimizer
+              (at training time).
+
+          alpha: float
+              compromise between L1 and L2 regularization (must be in [0, 1]),
+              for `solver` == 'enet'
+
+          row_sample: float
+              percentage of rows chosen from the training set.
+
+          col_sample: float
+              percentage of columns chosen from the training set.
+
+          dropout: float
+              percentage of nodes dropped from the training set.
+
+          tolerance: float
+              controls early stopping in gradient descent (at training time).
+
+          direct_link: bool
+              indicates whether the original features are included (True) in model's
+              fitting or not (False).
+
+          verbose: int
+              progress bar (yes = 1) or not (no = 0) (currently).
+
+          seed: int
+              reproducibility seed for nodes_sim=='uniform', clustering and dropout.
+
+          backend: str
+              type of backend; must be in ('cpu', 'gpu', 'tpu')
+
+          solver: str
+              type of 'weak' learner; currently in ('ridge', 'lasso')
+
+          activation: str
+              activation function: currently 'relu', 'relu6', 'sigmoid', 'tanh'
+
+          type_pi: str.
+              type of prediction interval; currently "kde" (default) or "bootstrap".
+              Used only in `self.predict`, for `self.replications` > 0 and `self.kernel`
+              in ('gaussian', 'tophat'). Default is `None`.
+
+          replications: int.
+              number of replications (if needed) for predictive simulation.
+              Used only in `self.predict`, for `self.kernel` in ('gaussian',
+              'tophat') and `self.type_pi = 'kde'`. Default is `None`.
+
+          n_clusters: int
+              number of clusters for clustering the features
+
+          clustering_method: str
+              clustering method: currently 'kmeans', 'gmm'
+
+          cluster_scaling: str
+              scaling method for clustering: currently 'standard', 'robust', 'minmax'
+
+          degree: int
+              degree of features interactions to include in the model
+
+          weights_distr: str
+              distribution of weights for constructing the model's hidden layer;
+              either 'uniform' or 'gaussian'
+
+          hist: bool
+              whether to use histogram features or not
+
+          bins: int or str
+              number of bins for histogram features (same as numpy.histogram, default is 'auto')
+    """
     cdef object obj
     cdef object fit_obj
     cdef int n_estimators
@@ -84,6 +182,82 @@ cdef class BoosterRegressor:
         return self
 
 cdef class BoosterClassifier:
+    """Booster classifier.
+
+      Attributes:
+
+          n_estimators: int
+              number of boosting iterations.
+
+          learning_rate: float
+              controls the learning speed at training time.
+
+          n_hidden_features: int
+              number of nodes in successive hidden layers.
+
+          reg_lambda: float
+              L2 regularization parameter for successive errors in the optimizer
+              (at training time).
+
+          alpha: float
+              compromise between L1 and L2 regularization (must be in [0, 1]),
+              for `solver` == 'enet'.
+
+          row_sample: float
+              percentage of rows chosen from the training set.
+
+          col_sample: float
+              percentage of columns chosen from the training set.
+
+          dropout: float
+              percentage of nodes dropped from the training set.
+
+          tolerance: float
+              controls early stopping in gradient descent (at training time).
+
+          direct_link: bool
+              indicates whether the original features are included (True) in model's
+              fitting or not (False).
+
+          verbose: int
+              progress bar (yes = 1) or not (no = 0) (currently).
+
+          seed: int
+              reproducibility seed for nodes_sim=='uniform', clustering and dropout.
+
+          backend: str
+              type of backend; must be in ('cpu', 'gpu', 'tpu')
+
+          solver: str
+              type of 'weak' learner; currently in ('ridge', 'lasso', 'enet').
+              'enet' is a combination of 'ridge' and 'lasso' called Elastic Net.
+
+          activation: str
+              activation function: currently 'relu', 'relu6', 'sigmoid', 'tanh'
+
+          n_clusters: int
+              number of clusters for clustering the features
+
+          clustering_method: str
+              clustering method: currently 'kmeans', 'gmm'
+
+          cluster_scaling: str
+              scaling method for clustering: currently 'standard', 'robust', 'minmax'
+
+          degree: int
+              degree of features interactions to include in the model
+
+          weights_distr: str
+              distribution of weights for constructing the model's hidden layer;
+              currently 'uniform', 'gaussian'
+
+          hist: bool
+              indicates whether histogram features are used or not (default is False)
+
+          bins: int or str
+              number of bins for histogram features (same as numpy.histogram, default is 'auto')
+    """
+
     cdef object obj
     cdef object fit_obj
     cdef int n_estimators

@@ -1,11 +1,23 @@
 import os
 import platform
 import shutil
+import subprocess 
 import sys
 from packaging import version
 from pathlib import Path
 from setuptools import Command, Extension, setup
 from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+
+try:
+    subprocess.check_call([sys.executable, "-m", "uv", "pip", "install", "numpy"])
+    subprocess.check_call([sys.executable, "-m", "uv", "pip", "install", "Cython"])
+    subprocess.check_call([sys.executable, "-m", "uv", "pip", "install", "jax"])
+    subprocess.check_call([sys.executable, "-m", "uv", "pip", "install", "tqdm"])
+except Exception as e: 
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "Cython"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "jax"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "tqdm"])
 
 class bdist_wheel(_bdist_wheel):
     def finalize_options(self):
