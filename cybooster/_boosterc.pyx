@@ -832,7 +832,7 @@ def safe_sparse_dot(a, b, backend="cpu", dense_output=False):
     """    
     if backend in ("gpu", "tpu"):
         # modif when jax.scipy.sparse available
-        return safe_sparse_dot(device_put(a), device_put(b)).block_until_ready()
+        return safe_sparse_dot(device_put(a), device_put(b))
 
     #    if backend == "cpu":
     if a.ndim > 2 or b.ndim > 2:

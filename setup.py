@@ -9,15 +9,12 @@ from setuptools import Command, Extension, setup
 from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
 try:
-    subprocess.check_call([sys.executable, "-m", "uv", "pip", "install", "numpy"])
-    subprocess.check_call([sys.executable, "-m", "uv", "pip", "install", "Cython"])
-    subprocess.check_call([sys.executable, "-m", "uv", "pip", "install", "jax"])
-    subprocess.check_call([sys.executable, "-m", "uv", "pip", "install", "tqdm"])
-except Exception as e: 
     subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy"])
     subprocess.check_call([sys.executable, "-m", "pip", "install", "Cython"])
     subprocess.check_call([sys.executable, "-m", "pip", "install", "jax"])
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "tqdm"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "tqdm"])    
+except Exception as e: 
+    pass
 
 class bdist_wheel(_bdist_wheel):
     def finalize_options(self):
@@ -34,7 +31,7 @@ class bdist_wheel(_bdist_wheel):
 
 CYTHON_MIN_VERSION = version.parse("3.0.10")
 
-__version__ = "0.1.4"
+__version__ = "0.2.0"
 
 class clean(Command):
     user_options = [("all", "a", "")]
