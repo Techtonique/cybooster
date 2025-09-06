@@ -175,7 +175,7 @@ cdef class BoosterRegressor:
             raise ValueError("Model not fitted yet. Call fit() first.")
         return predict_booster_regressor(self.fit_obj, X, self.backend)
     
-    def compute_sensitivities(self, double[:,::1] X, str activation='relu'):
+    def compute_sensitivities(self, double[:,::1] X):
         """
         Compute the gradient (sensitivity) of the response with respect to each input feature.
         
@@ -200,19 +200,19 @@ cdef class BoosterRegressor:
             double direct_grad, hidden_grad
         
         # Choose activation derivative function
-        if activation == 'relu':
+        if self.activation == 'relu':
             activation_derivative = lambda x: np.where(x > 0, 1.0, 0.0)
-        elif activation == 'relu6':
+        elif self.activation == 'relu6':
             activation_derivative = lambda x: np.where((x > 0) & (x < 6), 1.0, 0.0)
-        elif activation == 'sigmoid':
+        elif self.activation == 'sigmoid':
             def sigmoid_derivative(x):
                 sig = 1.0 / (1.0 + np.exp(-x))
                 return sig * (1.0 - sig)
             activation_derivative = sigmoid_derivative
-        elif activation == 'tanh':
+        elif self.activation == 'tanh':
             activation_derivative = lambda x: 1.0 - np.tanh(x)**2
         else:
-            raise ValueError(f"Unsupported activation function: {activation}")
+            raise ValueError(f"Unsupported activation function: {self.activation}")
         
         # Process each base learner
         for m in range(n_estimators):
