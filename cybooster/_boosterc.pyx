@@ -175,6 +175,87 @@ cdef class BoosterRegressor:
             raise ValueError("Model not fitted yet. Call fit() first.")
         return predict_booster_regressor(self.fit_obj, X, self.backend)
     
+    def compute_sensitivities(self, double[:,::1] X, str activation='relu'):
+        """
+        Compute the gradient (sensitivity) of the response with respect to each input feature.
+        
+        Returns:
+            np.ndarray: Array of sensitivities for each sample and feature (∂F_M/∂x_j)
+        """
+        assert self.fit_obj is not None, "Model not fitted yet. Call fit() first."
+        cdef:
+            int n_samples = X.shape[0]
+            int n_features = X.shape[1]
+            int n_estimators = self.fit_obj['n_estimators']
+            double learning_rate = self.fit_obj['learning_rate']
+            np.ndarray[np.float64_t, ndim=1] sigma = self.fit_obj['xsd']
+            np.ndarray[np.float64_t, ndim=2] sensitivities = np.zeros((n_samples, n_features))
+            np.ndarray[np.float64_t, ndim=2] X_std = (X - self.fit_obj['xm'][None, :]) / sigma[None, :]
+            np.ndarray[np.int64_t, ndim=1] feature_indices
+            np.ndarray[np.float64_t, ndim=2] W_i
+            np.ndarray[np.float64_t, ndim=2] X_subset
+            np.ndarray[np.float64_t, ndim=2] z_i
+            np.ndarray[np.float64_t, ndim=2] sigma_prime
+            int i, j, l, m, idx_in_subset
+            double direct_grad, hidden_grad
+        
+        # Choose activation derivative function
+        if activation == 'relu':
+            activation_derivative = lambda x: np.where(x > 0, 1.0, 0.0)
+        elif activation == 'relu6':
+            activation_derivative = lambda x: np.where((x > 0) & (x < 6), 1.0, 0.0)
+        elif activation == 'sigmoid':
+            def sigmoid_derivative(x):
+                sig = 1.0 / (1.0 + np.exp(-x))
+                return sig * (1.0 - sig)
+            activation_derivative = sigmoid_derivative
+        elif activation == 'tanh':
+            activation_derivative = lambda x: 1.0 - np.tanh(x)**2
+        else:
+            raise ValueError(f"Unsupported activation function: {activation}")
+        
+        # Process each base learner
+        for m in range(n_estimators):
+            feature_indices = self.fit_obj['col_index_i'][m]
+            W_i = self.fit_obj['W_i'][m]
+            X_subset = X_std[:, feature_indices]
+            
+            # Compute pre-activations
+            z_i = np.dot(X_subset, W_i)
+            
+            # Compute activation derivatives
+            sigma_prime = activation_derivative(z_i)
+            
+            # For each sample
+            for i in range(n_samples):
+                # For each feature in this learner's subset
+                for j_idx, j in enumerate(feature_indices):
+                    # Direct link component
+                    direct_grad = self.fit_obj['fit_obj_i'][m].coef_[j_idx]
+                    
+                    # Hidden layer component
+                    hidden_grad = 0.0
+                    for l in range(W_i.shape[1]):
+                        hidden_grad += (self.fit_obj['fit_obj_i'][m].coef_[len(feature_indices) + l] * 
+                                    sigma_prime[i, l] * 
+                                    W_i[j_idx, l])
+                    
+                    # Update sensitivity
+                    sensitivities[i, j] += learning_rate * (direct_grad + hidden_grad) / np.maximum(sigma[j], 1e-6)
+        
+        return sensitivities
+
+    def compute_feature_importance(self, double[:,::1] X, str activation='relu'):
+        """
+        Compute average absolute sensitivity for each feature across the dataset.
+        This serves as a feature importance measure.
+        """
+        cdef:
+            np.ndarray[np.float64_t, ndim=2] sensitivities = self.compute_sensitivities(X, activation)
+            np.ndarray[np.float64_t, ndim=1] importance = np.mean(np.abs(sensitivities), axis=0)
+        
+        return importance
+
     def update(self, double[:] X, y, double alpha=0.5):
         if self.fit_obj is None:
             raise ValueError("Model not fitted yet. Call fit() first.")
