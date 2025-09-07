@@ -234,19 +234,33 @@ cdef class BoosterRegressor:
             # Compute activation derivatives
             sigma_prime = activation_derivative(z_i)            
             # For each sample
-            for i in range(n_samples):
-                # For each feature in this learner's subset
-                for j_idx, j in enumerate(feature_indices):
-                    # Direct link component
-                    direct_grad = self.fit_obj['fit_obj_i'][m].coef_[j_idx]                    
-                    # Hidden layer component
-                    hidden_grad = 0.0
-                    for l in range(W_i.shape[1]):
-                        hidden_grad += (self.fit_obj['fit_obj_i'][m].coef_[len(feature_indices) + l] * 
-                                    sigma_prime[i, l] * 
-                                    W_i[j_idx, l])                    
-                    # Update sensitivity
-                    sensitivities[i, j] += learning_rate * (direct_grad + hidden_grad) / np.maximum(sigma[j], 1e-6)
+            if self.direct_link: 
+                for i in range(n_samples):
+                    # For each feature in this learner's subset
+                    for j_idx, j in enumerate(feature_indices):
+                        # Direct link component
+                        direct_grad = self.fit_obj['fit_obj_i'][m].coef_[j_idx]                    
+                        # Hidden layer component
+                        hidden_grad = 0.0
+                        for l in range(W_i.shape[1]):
+                            hidden_grad += (self.fit_obj['fit_obj_i'][m].coef_[len(feature_indices) + l] * 
+                                        sigma_prime[i, l] * 
+                                        W_i[j_idx, l])                    
+                        # Update sensitivity
+                        sensitivities[i, j] += learning_rate * (direct_grad + hidden_grad) / np.maximum(sigma[j], 1e-6)
+            else: 
+                for i in range(n_samples):
+                    # For each feature in this learner's subset
+                    for j_idx, j in enumerate(feature_indices):
+                        # Hidden layer component
+                        hidden_grad = 0.0
+                        for l in range(W_i.shape[1]):
+                            hidden_grad += (self.fit_obj['fit_obj_i'][m].coef_[l] * 
+                                        sigma_prime[i, l] * 
+                                        W_i[j_idx, l])                    
+                        # Update sensitivity
+                        sensitivities[i, j] += learning_rate * (hidden_grad) / np.maximum(sigma[j], 1e-6)
+
         
         if columns is None:
             return pd.DataFrame(sensitivities)
