@@ -176,7 +176,7 @@ cdef class BoosterRegressor:
             raise ValueError("Model not fitted yet. Call fit() first.")
         return predict_booster_regressor(self.fit_obj, X, self.backend)
     
-    def compute_sensitivities(self, double[:,::1] X, columns=None, show_progress=True):
+    def get_sensitivities(self, double[:,::1] X, columns=None, show_progress=True):
         """
         Compute the gradient (sensitivity) of the response with respect to each input feature.
 
@@ -252,16 +252,23 @@ cdef class BoosterRegressor:
             assert len(columns) == n_features, "Length of columns must match number of features"
             return pd.DataFrame(sensitivities, columns=columns)
 
-    def compute_feature_importance(self, double[:,::1] X, str activation='relu'):
+    def get_feature_importances(self, double[:,::1] X, columns=None, show_progress=True):
         """
         Compute average absolute sensitivity for each feature across the dataset.
         This serves as a feature importance measure.
         """
         cdef:
-            np.ndarray[np.float64_t, ndim=2] sensitivities = self.compute_sensitivities(X, activation)
+            int n_samples = X.shape[0]
+            int n_features = X.shape[1]
+        cdef:
+            np.ndarray[np.float64_t, ndim=2] sensitivities = self.get_sensitivities(X, columns=columns, show_progress=show_progress).values 
             np.ndarray[np.float64_t, ndim=1] importance = np.mean(np.abs(sensitivities), axis=0)
-        
-        return importance
+        if columns is None:
+            return pd.DataFrame(importance)
+        else:
+            assert len(columns) == n_features, "Length of columns must match number of features"
+            return pd.DataFrame(importance, columns=columns)
+
 
     def update(self, double[:] X, y, double alpha=0.5):
         if self.fit_obj is None:

@@ -78,8 +78,14 @@ dist: clean ## builds source and wheel package
 	python3 setup.py bdist_wheel
 	ls -l dist
 
-install: clean ## install the package to the active Python's site-packages
+install: ## install the package to the active Python's site-packages
 	pip install -e . --verbose
+
+reinstall: deactivate 
+	rm -rf venv/
+	virtualenv venv
+	source venv/bin/activate
+	install 
 
 run-examples: ## run all examples with one command
 	find examples -maxdepth 2 -name "*.py" -exec python3 {} \;
