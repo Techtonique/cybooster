@@ -5,6 +5,7 @@ requires = [
     "packaging",
     "Cython>=3.0.10",
     "numpy>=2.0.0",
+    "pandas>=2.0.0",
 ]
 build-backend = "setuptools.build_meta"
 

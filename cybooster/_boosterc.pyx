@@ -4,6 +4,7 @@
 # cython: language_level=3
 
 import numpy as np
+import pandas as pd
 import jax.numpy as jnp
 import sys 
 cimport numpy as np
@@ -175,9 +176,15 @@ cdef class BoosterRegressor:
             raise ValueError("Model not fitted yet. Call fit() first.")
         return predict_booster_regressor(self.fit_obj, X, self.backend)
     
-    def compute_sensitivities(self, double[:,::1] X):
+    def compute_sensitivities(self, double[:,::1] X, columns=None, show_progress=True):
         """
         Compute the gradient (sensitivity) of the response with respect to each input feature.
+
+        Parameters:
+            X (np.ndarray): Input data of shape (n_samples, n_features).
+            columns (list, optional): List of features .
+                                      If None, automatically named.
+            show_progress (bool, optional): Whether to display a progress bar. Default is True.
         
         Returns:
             np.ndarray: Array of sensitivities for each sample and feature (∂F_M/∂x_j)
@@ -215,35 +222,35 @@ cdef class BoosterRegressor:
             raise ValueError(f"Unsupported activation function: {self.activation}")
         
         # Process each base learner
-        for m in range(n_estimators):
+        iterator = tqdm(range(n_estimators)) if show_progress else range(n_estimators)
+        for m in iterator:
             feature_indices = self.fit_obj['col_index_i'][m]
             W_i = self.fit_obj['W_i'][m]
-            X_subset = X_std[:, feature_indices]
-            
+            X_subset = X_std[:, feature_indices]            
             # Compute pre-activations
-            z_i = np.dot(X_subset, W_i)
-            
+            z_i = np.dot(X_subset, W_i)            
             # Compute activation derivatives
-            sigma_prime = activation_derivative(z_i)
-            
+            sigma_prime = activation_derivative(z_i)            
             # For each sample
             for i in range(n_samples):
                 # For each feature in this learner's subset
                 for j_idx, j in enumerate(feature_indices):
                     # Direct link component
-                    direct_grad = self.fit_obj['fit_obj_i'][m].coef_[j_idx]
-                    
+                    direct_grad = self.fit_obj['fit_obj_i'][m].coef_[j_idx]                    
                     # Hidden layer component
                     hidden_grad = 0.0
                     for l in range(W_i.shape[1]):
                         hidden_grad += (self.fit_obj['fit_obj_i'][m].coef_[len(feature_indices) + l] * 
                                     sigma_prime[i, l] * 
-                                    W_i[j_idx, l])
-                    
+                                    W_i[j_idx, l])                    
                     # Update sensitivity
                     sensitivities[i, j] += learning_rate * (direct_grad + hidden_grad) / np.maximum(sigma[j], 1e-6)
         
-        return sensitivities
+        if columns is None:
+            return pd.DataFrame(sensitivities)
+        else:
+            assert len(columns) == n_features, "Length of columns must match number of features"
+            return pd.DataFrame(sensitivities, columns=columns)
 
     def compute_feature_importance(self, double[:,::1] X, str activation='relu'):
         """
