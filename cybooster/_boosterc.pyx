@@ -305,8 +305,25 @@ cdef class BoosterRegressor:
         margin_of_error = t_critical * summary['SE'].values        
         # Calculate the confidence intervals (Mean ± Margin of Error)
         summary.loc[:,'Lower CI'] = summary['Mean'].values - margin_of_error
-        summary.loc[:,'Upper CI'] = summary['Mean'].values + margin_of_error        
-        # Sort the summary based on the mean sensitivity for better readability
+        summary.loc[:,'Upper CI'] = summary['Mean'].values + margin_of_error   
+        # Calculate the t-statistic for significance
+        summary.loc[:,'t-statistic'] = summary['Mean'] / summary['SE']        
+        # Calculate p-value from t-statistic (two-tailed test)
+        summary.loc[:,'p-value'] = 2 * (1 - stats.t.cdf(np.abs(summary['t-statistic']), df))        
+        # Add a column for significance codes
+        def significance_code(p_value):
+            if p_value < 0.001:
+                return '***'
+            elif p_value < 0.01:
+                return '**'
+            elif p_value < 0.05:
+                return '*'
+            elif p_value < 0.1:
+                return '.'
+            else:
+                return '-'        
+        summary.loc[:,'Signif. Code'] = summary['p-value'].apply(significance_code)     
+            # Sort the summary based on the mean sensitivity for better readability
         summary = summary.sort_values(by='Mean', ascending=False)        
         return summary.round(3)
 
