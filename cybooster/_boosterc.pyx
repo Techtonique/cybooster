@@ -269,7 +269,7 @@ cdef class BoosterRegressor:
             return pd.DataFrame(importance)
         else:
             assert len(columns) == n_features, "Length of columns must match number of features"
-            return pd.DataFrame(importance, columns=columns)
+            return pd.DataFrame(importance.reshape(1, len(columns)), columns=columns)
 
     def get_summary(self, double[:,::1] X, conf_level=0.95, columns=None, show_progress=True):
         """
@@ -283,41 +283,31 @@ cdef class BoosterRegressor:
         
         Returns:
         - summary_df: A pandas DataFrame with feature-level summary statistics.
-        """
-        
+        """        
         # Prepare a DataFrame to hold the summary
         df_sensitivities = self.get_sensitivities(X, columns=columns, show_progress=False)
-        summary = pd.DataFrame(index=df_sensitivities.columns)
-        
+        summary = pd.DataFrame(index=df_sensitivities.columns)        
         # Calculate basic stats
-        summary['Mean'] = df_sensitivities.mean()
-        summary['Std. Dev.'] = df_sensitivities.std()
-        summary['Min'] = df_sensitivities.min()
-        summary['Max'] = df_sensitivities.max()
-        summary['Median'] = df_sensitivities.median()
-        
+        summary.loc[:,'Mean'] = df_sensitivities.mean()
+        summary.loc[:,'Std. Dev.'] = df_sensitivities.std()
+        summary.loc[:,'Min'] = df_sensitivities.min()
+        summary.loc[:,'Max'] = df_sensitivities.max()
+        summary.loc[:,'Median'] = df_sensitivities.median()        
         # Number of observations (n)
-        n = len(df_sensitivities)
-        
+        n = len(df_sensitivities)        
         # Calculate the standard error of the mean (SE)
-        summary['SE'] = summary['Std. Dev.'] / np.sqrt(n)
-        
+        summary.loc[:,'SE'] = summary['Std. Dev.'].values / np.sqrt(n)        
         # Degrees of freedom for the t-distribution
-        df = n - 1
-        
+        df = n - 1        
         # Get the t critical value for the confidence level (two-tailed)
-        t_critical = stats.t.ppf((1 + conf_level) / 2, df)
-        
+        t_critical = stats.t.ppf((1 + conf_level) / 2, df)        
         # Calculate the margin of error (ME) for each feature
-        margin_of_error = t_critical * summary['SE']
-        
+        margin_of_error = t_critical * summary['SE'].values        
         # Calculate the confidence intervals (Mean ± Margin of Error)
-        summary['Lower CI'] = summary['Mean'] - margin_of_error
-        summary['Upper CI'] = summary['Mean'] + margin_of_error
-        
+        summary.loc[:,'Lower CI'] = summary['Mean'].values - margin_of_error
+        summary.loc[:,'Upper CI'] = summary['Mean'].values + margin_of_error        
         # Sort the summary based on the mean sensitivity for better readability
-        summary = summary.sort_values(by='Mean', ascending=False)
-        
+        summary = summary.sort_values(by='Mean', ascending=False)        
         return summary.round(3)
 
     def update(self, double[:] X, y, double alpha=0.5):
