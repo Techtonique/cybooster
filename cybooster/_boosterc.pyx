@@ -4,6 +4,7 @@
 # cython: language_level=3
 
 import numpy as np
+import pandas as pd
 import jax.numpy as jnp
 import sys 
 cimport numpy as np
@@ -12,6 +13,9 @@ from copy import deepcopy
 from tqdm import tqdm
 from scipy.special import expit
 from scipy import sparse
+from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
+from sklearn.utils import resample
+from scipy import stats
 
 # Add this small trick to safely call `import_array()`
 cdef extern from *:
@@ -26,7 +30,7 @@ cdef extern from *:
 # Call it at module import
 init_numpy()
 
-cdef class BoosterRegressor:
+cdef class BoosterRegressor(BaseEstimator, RegressorMixin):
     """Booster regressor.
 
       Attributes:
@@ -175,13 +179,176 @@ cdef class BoosterRegressor:
             raise ValueError("Model not fitted yet. Call fit() first.")
         return predict_booster_regressor(self.fit_obj, X, self.backend)
     
+    def get_sensitivities(self, double[:,::1] X, columns=None, show_progress=True):
+        """
+        Compute the gradient (sensitivity) of the response with respect to each input feature.
+
+        Parameters:
+            X (np.ndarray): Input data of shape (n_samples, n_features).
+            columns (list, optional): List of features .
+                                      If None, automatically named.
+            show_progress (bool, optional): Whether to display a progress bar. Default is True.
+        
+        Returns:
+            np.ndarray: Array of sensitivities for each sample and feature (∂F_M/∂x_j)
+        """
+        assert self.fit_obj is not None, "Model not fitted yet. Call fit() first."
+        cdef:
+            int n_samples = X.shape[0]
+            int n_features = X.shape[1]
+            int n_estimators = self.fit_obj['n_estimators']
+            double learning_rate = self.fit_obj['learning_rate']
+            np.ndarray[np.float64_t, ndim=1] sigma = self.fit_obj['xsd']
+            np.ndarray[np.float64_t, ndim=2] sensitivities = np.zeros((n_samples, n_features))
+            np.ndarray[np.float64_t, ndim=2] X_std = (X - self.fit_obj['xm'][None, :]) / sigma[None, :]
+            np.ndarray[np.int64_t, ndim=1] feature_indices
+            np.ndarray[np.float64_t, ndim=2] W_i
+            np.ndarray[np.float64_t, ndim=2] X_subset
+            np.ndarray[np.float64_t, ndim=2] z_i
+            np.ndarray[np.float64_t, ndim=2] sigma_prime
+            int i, j, l, m, idx_in_subset
+            double direct_grad, hidden_grad
+        
+        # Choose activation derivative function
+        if self.activation == 'relu':
+            activation_derivative = lambda x: np.where(x > 0, 1.0, 0.0)
+        elif self.activation == 'relu6':
+            activation_derivative = lambda x: np.where((x > 0) & (x < 6), 1.0, 0.0)
+        elif self.activation == 'sigmoid':
+            def sigmoid_derivative(x):
+                sig = 1.0 / (1.0 + np.exp(-x))
+                return sig * (1.0 - sig)
+            activation_derivative = sigmoid_derivative
+        elif self.activation == 'tanh':
+            activation_derivative = lambda x: 1.0 - np.tanh(x)**2
+        else:
+            raise ValueError(f"Unsupported activation function: {self.activation}")
+        
+        # Process each base learner
+        iterator = tqdm(range(n_estimators)) if show_progress else range(n_estimators)
+        for m in iterator:
+            feature_indices = self.fit_obj['col_index_i'][m]
+            W_i = self.fit_obj['W_i'][m]
+            X_subset = X_std[:, feature_indices]            
+            # Compute pre-activations
+            z_i = np.dot(X_subset, W_i)            
+            # Compute activation derivatives
+            sigma_prime = activation_derivative(z_i)            
+            # For each sample
+            if self.direct_link: 
+                for i in range(n_samples):
+                    # For each feature in this learner's subset
+                    for j_idx, j in enumerate(feature_indices):
+                        # Direct link component
+                        direct_grad = self.fit_obj['fit_obj_i'][m].coef_[j_idx]                    
+                        # Hidden layer component
+                        hidden_grad = 0.0
+                        for l in range(W_i.shape[1]):
+                            hidden_grad += (self.fit_obj['fit_obj_i'][m].coef_[len(feature_indices) + l] * 
+                                        sigma_prime[i, l] * 
+                                        W_i[j_idx, l])                    
+                        # Update sensitivity
+                        sensitivities[i, j] += learning_rate * (direct_grad + hidden_grad) / np.maximum(sigma[j], 1e-6)
+            else: 
+                for i in range(n_samples):
+                    # For each feature in this learner's subset
+                    for j_idx, j in enumerate(feature_indices):
+                        # Hidden layer component
+                        hidden_grad = 0.0
+                        for l in range(W_i.shape[1]):
+                            hidden_grad += (self.fit_obj['fit_obj_i'][m].coef_[l] * 
+                                        sigma_prime[i, l] * 
+                                        W_i[j_idx, l])                    
+                        # Update sensitivity
+                        sensitivities[i, j] += learning_rate * (hidden_grad) / np.maximum(sigma[j], 1e-6)
+
+        
+        if columns is None:
+            return pd.DataFrame(sensitivities)
+        else:
+            assert len(columns) == n_features, "Length of columns must match number of features"
+            return pd.DataFrame(sensitivities, columns=columns)
+
+    def get_feature_importances(self, double[:,::1] X, columns=None, show_progress=True):
+        """
+        Compute average absolute sensitivity for each feature across the dataset.
+        This serves as a feature importance measure.
+        """
+        cdef:
+            int n_samples = X.shape[0]
+            int n_features = X.shape[1]
+        cdef:
+            np.ndarray[np.float64_t, ndim=2] sensitivities = self.get_sensitivities(X, columns=columns, show_progress=show_progress).values 
+            np.ndarray[np.float64_t, ndim=1] importance = np.mean(np.abs(sensitivities), axis=0)
+        if columns is None:
+            return pd.DataFrame(importance)
+        else:
+            assert len(columns) == n_features, "Length of columns must match number of features"
+            return pd.DataFrame(importance.reshape(1, len(columns)), columns=columns)
+
+    def get_summary(self, double[:,::1] X, conf_level=0.95, columns=None, show_progress=True):
+        """
+        Given a DataFrame of sensitivities (n_obs x n_features), this function 
+        returns a summary similar to `skim` in R with confidence intervals around 
+        average effects.
+        
+        Parameters:
+        - n_bootstrap: Number of bootstrap iterations for confidence intervals.
+        - conf_level: Confidence level for the intervals (default: 95%).
+        
+        Returns:
+        - summary_df: A pandas DataFrame with feature-level summary statistics.
+        """        
+        # Prepare a DataFrame to hold the summary
+        df_sensitivities = self.get_sensitivities(X, columns=columns, show_progress=False)
+        summary = pd.DataFrame(index=df_sensitivities.columns)        
+        # Calculate basic stats
+        summary.loc[:,'Mean'] = df_sensitivities.mean()
+        summary.loc[:,'Std. Dev.'] = df_sensitivities.std()
+        summary.loc[:,'Min'] = df_sensitivities.min()
+        summary.loc[:,'Max'] = df_sensitivities.max()
+        summary.loc[:,'Median'] = df_sensitivities.median()        
+        # Number of observations (n)
+        n = len(df_sensitivities)        
+        # Calculate the standard error of the mean (SE)
+        summary.loc[:,'SE'] = summary['Std. Dev.'].values / np.sqrt(n)        
+        # Degrees of freedom for the t-distribution
+        df = n - 1        
+        # Get the t critical value for the confidence level (two-tailed)
+        t_critical = stats.t.ppf((1 + conf_level) / 2, df)        
+        # Calculate the margin of error (ME) for each feature
+        margin_of_error = t_critical * summary['SE'].values        
+        # Calculate the confidence intervals (Mean ± Margin of Error)
+        summary.loc[:,'Lower CI'] = summary['Mean'].values - margin_of_error
+        summary.loc[:,'Upper CI'] = summary['Mean'].values + margin_of_error   
+        # Calculate the t-statistic for significance
+        summary.loc[:,'t-statistic'] = summary['Mean'] / summary['SE']        
+        # Calculate p-value from t-statistic (two-tailed test)
+        summary.loc[:,'p-value'] = 2 * (1 - stats.t.cdf(np.abs(summary['t-statistic']), df))        
+        # Add a column for significance codes
+        def significance_code(p_value):
+            if p_value < 0.001:
+                return '***'
+            elif p_value < 0.01:
+                return '**'
+            elif p_value < 0.05:
+                return '*'
+            elif p_value < 0.1:
+                return '.'
+            else:
+                return '-'        
+        summary.loc[:,'Signif. Code'] = summary['p-value'].apply(significance_code)     
+            # Sort the summary based on the mean sensitivity for better readability
+        summary = summary.sort_values(by='Mean', ascending=False)        
+        return summary.round(3)
+
     def update(self, double[:] X, y, double alpha=0.5):
         if self.fit_obj is None:
             raise ValueError("Model not fitted yet. Call fit() first.")
         self.fit_obj = update_booster(self.fit_obj, X, y, alpha, self.backend)
         return self
 
-cdef class BoosterClassifier:
+cdef class BoosterClassifier(BaseEstimator, ClassifierMixin):
     """Booster classifier.
 
       Attributes:
