@@ -30,7 +30,7 @@ cdef extern from *:
 # Call it at module import
 init_numpy()
 
-cdef class BoosterRegressor(BaseEstimator, RegressorMixin):
+class BoosterRegressor(BaseEstimator, RegressorMixin):
     """Booster regressor.
 
       Attributes:
@@ -348,7 +348,7 @@ cdef class BoosterRegressor(BaseEstimator, RegressorMixin):
         self.fit_obj = update_booster(self.fit_obj, X, y, alpha, self.backend)
         return self
 
-cdef class BoosterClassifier(BaseEstimator, ClassifierMixin):
+class BoosterClassifier(BaseEstimator, ClassifierMixin):
     """Booster classifier.
 
       Attributes:
