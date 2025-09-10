@@ -13,7 +13,6 @@ from copy import deepcopy
 from tqdm import tqdm
 from scipy.special import expit
 from scipy import sparse
-from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 from sklearn.utils import resample
 from scipy import stats
 
@@ -30,7 +29,7 @@ cdef extern from *:
 # Call it at module import
 init_numpy()
 
-class BoosterRegressor(BaseEstimator, RegressorMixin):
+cdef class BoosterRegressor:
     """Booster regressor.
 
       Attributes:
@@ -348,7 +347,7 @@ class BoosterRegressor(BaseEstimator, RegressorMixin):
         self.fit_obj = update_booster(self.fit_obj, X, y, alpha, self.backend)
         return self
 
-class BoosterClassifier(BaseEstimator, ClassifierMixin):
+cdef class BoosterClassifier:
     """Booster classifier.
 
       Attributes:

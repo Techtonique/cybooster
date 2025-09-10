@@ -7,6 +7,8 @@ This package provides:
 """
 
 from ._boosterc import BoosterRegressor, BoosterClassifier
+from .booster import SkBoosterRegressor, SkBoosterClassifier
 
-__all__ = ["BoosterRegressor", "BoosterClassifier"]  # Explicit exports
+__all__ = ["BoosterRegressor", "BoosterClassifier", 
+           "SkBoosterRegressor", "SkBoosterClassifier"]  # Explicit exports
 __version__ = "0.4.0"  # Package version
