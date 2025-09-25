@@ -17,8 +17,8 @@ ctypedef cnp.float64_t DTYPE_t
 
 cdef double EPS = 1e-8  # Small constant for numerical stability
 
-cdef class NGBoost:
-    """Optimized NGBoost implementation in Cython with corrections"""
+cdef class NGBRegressor:
+    """Optimized NGBoost implementation"""
     
     cdef:
         cdef object obj
@@ -249,7 +249,7 @@ cdef class NGBoost:
             for i in range(n_samples):
                 result[i, 0] = predictions[i, 0]  # mu
                 result[i, 1] = exp(min(predictions[i, 1], 20.0))  # sigma = exp(log_sigma)
-            return result
+            return result[:, 0], result[:, 1]
         else:
             # Return just the mean predictions
             return predictions[:, 0]

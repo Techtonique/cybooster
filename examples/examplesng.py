@@ -1,5 +1,5 @@
 import numpy as np
-from cybooster import NGBoost, SkNGBoost
+from cybooster import NGBRegressor, SkNGBRegressor
 from sklearn.datasets import load_diabetes, fetch_openml
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, mean_squared_error, root_mean_squared_error
@@ -17,7 +17,7 @@ y_train = np.asarray(y_train, dtype=np.float64)
 X_test = np.asarray(X_test, dtype=np.float64)
 y_test = np.asarray(y_test, dtype=np.float64)
 
-regressor = NGBoost()
+regressor = NGBRegressor()
 start = time()
 regressor.fit(X_train, y_train)
 y_pred = regressor.predict(X_test)
@@ -26,7 +26,7 @@ rmse = root_mean_squared_error(y_test, y_pred)
 print(f"RMSE for regression: {rmse:.4f}")
 print("return_std:", regressor.predict(X_test, return_std=True))
 
-regressor = SkNGBoost()
+regressor = SkNGBRegressor()
 start = time()
 regressor.fit(X_train, y_train)
 y_pred = regressor.predict(X_test)
@@ -35,7 +35,7 @@ rmse = root_mean_squared_error(y_test, y_pred)
 print(f"RMSE for regression: {rmse:.4f}")
 print("return_std:", regressor.predict(X_test, return_std=True))
 
-regressor = NGBoost(LinearRegression())
+regressor = NGBRegressor(LinearRegression())
 start = time()
 regressor.fit(X_train, y_train)
 y_pred = regressor.predict(X_test)
@@ -44,7 +44,7 @@ rmse = root_mean_squared_error(y_test, y_pred)
 print(f"RMSE for regression: {rmse:.4f}")
 print("return_std:", regressor.predict(X_test, return_std=True))
 
-regressor = SkNGBoost(LinearRegression())
+regressor = SkNGBRegressor(LinearRegression())
 start = time()
 regressor.fit(X_train, y_train)
 y_pred = regressor.predict(X_test)
@@ -53,7 +53,7 @@ rmse = root_mean_squared_error(y_test, y_pred)
 print(f"RMSE for regression: {rmse:.4f}")
 print("return_std:", regressor.predict(X_test, return_std=True))
 
-regressor = NGBoost(Ridge())
+regressor = NGBRegressor(Ridge())
 start = time()
 regressor.fit(X_train, y_train)
 y_pred = regressor.predict(X_test)
@@ -62,7 +62,7 @@ rmse = root_mean_squared_error(y_test, y_pred)
 print(f"RMSE for regression: {rmse:.4f}")
 print("return_std:", regressor.predict(X_test, return_std=True))
 
-regressor = SkNGBoost(Ridge())
+regressor = SkNGBRegressor(Ridge())
 start = time()
 regressor.fit(X_train, y_train)
 y_pred = regressor.predict(X_test)
@@ -71,7 +71,7 @@ rmse = root_mean_squared_error(y_test, y_pred)
 print(f"RMSE for regression: {rmse:.4f}")
 print("return_std:", regressor.predict(X_test, return_std=True))
 
-regressor = NGBoost(ExtraTreeRegressor())
+regressor = NGBRegressor(ExtraTreeRegressor())
 start = time()
 regressor.fit(X_train, y_train)
 y_pred = regressor.predict(X_test)
@@ -80,7 +80,7 @@ rmse = root_mean_squared_error(y_test, y_pred)
 print(f"RMSE for regression: {rmse:.4f}")
 print("return_std:", regressor.predict(X_test, return_std=True))
 
-regressor = SkNGBoost(ExtraTreeRegressor())
+regressor = SkNGBRegressor(ExtraTreeRegressor())
 start = time()
 regressor.fit(X_train, y_train)
 y_pred = regressor.predict(X_test)

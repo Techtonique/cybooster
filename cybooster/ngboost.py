@@ -11,7 +11,7 @@ except ImportError:
     JAX_AVAILABLE = False
     jnp = np
 
-class SkNGBoost(BaseEstimator, RegressorMixin):
+class SkNGBRegressor(BaseEstimator, RegressorMixin):
     """NGBoost wrapper with optional JAX acceleration"""
     
     def __init__(self, obj=None, n_estimators=500, learning_rate=0.01, 
@@ -26,10 +26,10 @@ class SkNGBoost(BaseEstimator, RegressorMixin):
         self.early_stopping = early_stopping
         self.n_iter_no_change = n_iter_no_change
         try:
-            from ._ngboost import NGBoost
+            from ._ngboost import NGBRegressor
             # int n_estimators=500, double learning_rate=0.01, 
             # double tol=1e-4, bint early_stopping=True, int n_iter_no_change=10, int verbose=1
-            self.ngb = NGBoost(self.obj, self.n_estimators, self.learning_rate, self.tol, 
+            self.ngb = NGBRegressor(self.obj, self.n_estimators, self.learning_rate, self.tol, 
             self.early_stopping, self.n_iter_no_change, int(self.verbose))
         except ImportError:
             warnings.warn("Cython module not available, using fallback")
