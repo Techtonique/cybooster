@@ -4,6 +4,7 @@ from sklearn.datasets import load_diabetes, fetch_openml
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, mean_squared_error, root_mean_squared_error
 from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.tree import ExtraTreeRegressor
 from time import time 
 
 
@@ -62,6 +63,24 @@ print(f"RMSE for regression: {rmse:.4f}")
 print("return_std:", regressor.predict(X_test, return_std=True))
 
 regressor = SkNGBoost(Ridge())
+start = time()
+regressor.fit(X_train, y_train)
+y_pred = regressor.predict(X_test)
+print(f"Elapsed: {time() - start} s")
+rmse = root_mean_squared_error(y_test, y_pred)
+print(f"RMSE for regression: {rmse:.4f}")
+print("return_std:", regressor.predict(X_test, return_std=True))
+
+regressor = NGBoost(ExtraTreeRegressor())
+start = time()
+regressor.fit(X_train, y_train)
+y_pred = regressor.predict(X_test)
+print(f"Elapsed: {time() - start} s")
+rmse = root_mean_squared_error(y_test, y_pred)
+print(f"RMSE for regression: {rmse:.4f}")
+print("return_std:", regressor.predict(X_test, return_std=True))
+
+regressor = SkNGBoost(ExtraTreeRegressor())
 start = time()
 regressor.fit(X_train, y_train)
 y_pred = regressor.predict(X_test)

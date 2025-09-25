@@ -7,6 +7,7 @@
 import numpy as np
 cimport numpy as cnp
 cimport cython
+from copy import deepcopy
 from libc.math cimport exp, log, sqrt, fabs
 from cython.parallel import prange
 from sklearn.tree import DecisionTreeRegressor
@@ -181,7 +182,14 @@ cdef class NGBoost:
                         min_samples_leaf=max(1, self.n_samples // 100)  # Adaptive min samples
                     )
                 else: 
-                    learner = self.obj
+                    learner = deepcopy(self.obj)
+                    try: 
+                        learner.set_params(random_state=42 + iteration)
+                    except Exception as e: 
+                        try: 
+                            learner.set_params(seed=42 + iteration)
+                        except Exception as e: 
+                            pass 
                 learner.fit(X, self.natural_grads_[:, param_idx])
                 
                 # Get predictions
