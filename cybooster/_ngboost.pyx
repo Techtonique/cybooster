@@ -20,6 +20,8 @@ cdef class NGBoost:
     """Optimized NGBoost implementation in Cython with corrections"""
     
     cdef:
+        cdef object obj
+        cdef object fit_obj
         int n_estimators, n_samples, n_features
         double learning_rate, tol
         list learners, scalers
@@ -31,7 +33,7 @@ cdef class NGBoost:
         int n_iter_no_change
         int verbose
         
-    def __init__(self, int n_estimators=500, double learning_rate=0.01, 
+    def __init__(self, object obj=None, int n_estimators=500, double learning_rate=0.01, 
                  double tol=1e-4, bint early_stopping=True, int n_iter_no_change=10, int verbose=1):
         if n_estimators <= 0:
             raise ValueError("n_estimators must be positive")
@@ -40,7 +42,8 @@ cdef class NGBoost:
         if tol <= 0:
             raise ValueError("tol must be positive")
         if n_iter_no_change <= 0:
-            raise ValueError("n_iter_no_change must be positive")                 
+            raise ValueError("n_iter_no_change must be positive")     
+        self.obj = obj                
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.tol = tol
@@ -171,11 +174,14 @@ cdef class NGBoost:
             
             for param_idx in range(2):
                 # Fit base learner
-                learner = DecisionTreeRegressor(
-                    max_depth=3, 
-                    random_state=42 + iteration,  # Different seed each iteration
-                    min_samples_leaf=max(1, self.n_samples // 100)  # Adaptive min samples
-                )
+                if self.obj is None: 
+                    learner = DecisionTreeRegressor(
+                        max_depth=3, 
+                        random_state=42 + iteration,  # Different seed each iteration
+                        min_samples_leaf=max(1, self.n_samples // 100)  # Adaptive min samples
+                    )
+                else: 
+                    learner = self.obj
                 learner.fit(X, self.natural_grads_[:, param_idx])
                 
                 # Get predictions
