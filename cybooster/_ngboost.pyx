@@ -57,20 +57,21 @@ cdef class NGBoost:
                                         cnp.ndarray[DTYPE_t, ndim=1] y,
                                         cnp.ndarray[DTYPE_t, ndim=2] grads):
         """Compute NATURAL gradients for Normal distribution"""
-        cdef int i
         cdef int n = params.shape[0]
-        cdef double mu, log_sigma, sigma, diff, sigma_sq
         
-        for i in range(n):
-            mu = params[i, 0]
-            log_sigma = params[i, 1]
-            sigma = exp(log_sigma)
-            sigma_sq = max(sigma * sigma, EPS) 
-            diff = y[i] - mu
-            
-            # NATURAL GRADIENTS: Fisher^{-1} @ score
-            grads[i, 0] = diff  # natural_grad_μ = (y-μ)
-            grads[i, 1] = 0.5 * (-1.0 + diff*diff / sigma_sq)  # natural_grad_logσ
+        # Extract column vectors
+        cdef cnp.ndarray[DTYPE_t, ndim=1] mu = params[:, 0]
+        cdef cnp.ndarray[DTYPE_t, ndim=1] log_sigma = params[:, 1]
+        
+        # Vectorized operations
+        cdef cnp.ndarray[DTYPE_t, ndim=1] sigma = np.exp(log_sigma)
+        cdef cnp.ndarray[DTYPE_t, ndim=1] sigma_sq = np.maximum(sigma * sigma, EPS)
+        cdef cnp.ndarray[DTYPE_t, ndim=1] diff = y - mu
+        
+        # NATURAL GRADIENTS: Fisher^{-1} @ score
+        grads[:, 0] = diff  # natural_grad_μ = (y-μ)
+        grads[:, 1] = 0.5 * (-1.0 + diff*diff / sigma_sq)  # natural_grad_logσ
+
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
