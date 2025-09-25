@@ -50,10 +50,10 @@ class SkNGBoost(BaseEstimator, RegressorMixin):
         
         return self.ngb.fit(X, y)
     
-    def predict(self, X):
+    def predict(self, X, return_std=False):
         """Predict distribution parameters"""
         X = np.asarray(X, dtype=np.float64)
-        return self.ngb.predict(X)
+        return self.ngb.predict(X, return_std)
     
     def predict_dist(self, X):
         """Predict probability distributions"""
