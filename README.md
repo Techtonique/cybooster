@@ -15,19 +15,19 @@ Each base learner is augmented with a randomized neural network (a generalizatio
 To install `CyBooster`, you can use `pip` or `uv` (faster):
 
 ```bash
-pip install cybooster --verbose
+pip install cybooster
 ```
 
 or 
 
 ```bash
-uv pip install cybooster --verbose
+uv pip install cybooster
 ```
 
 From GitHub:
 
 ```bash
-pip install git+https://github.com/Techtonique/cybooster.git --verbose
+pip install git+https://github.com/Techtonique/cybooster.git
 ```
 
 ## Usage
