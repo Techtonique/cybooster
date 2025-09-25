@@ -71,26 +71,30 @@ cdef class NGBoost:
             # NATURAL GRADIENTS: Fisher^{-1} @ score
             grads[i, 0] = diff  # natural_grad_μ = (y-μ)
             grads[i, 1] = 0.5 * (-1.0 + diff*diff / sigma_sq)  # natural_grad_logσ
-    
+
     @cython.boundscheck(False)
-    cdef double compute_log_likelihood(self, cnp.ndarray[DTYPE_t, ndim=2] params, 
-                                       cnp.ndarray[DTYPE_t, ndim=1] y):
+    @cython.wraparound(False)
+    cdef double compute_log_likelihood(self, cnp.ndarray[DTYPE_t, ndim=2] params,
+                                    cnp.ndarray[DTYPE_t, ndim=1] y):
         """Compute log-likelihood for monitoring convergence"""
-        cdef int i, n = params.shape[0]
-        cdef double ll = 0.0
-        cdef double mu, log_sigma, sigma, diff
+        cdef int n = params.shape[0]
         cdef double log_2pi = 1.8378770664093453  # log(2π)
-        
-        for i in range(n):
-            mu = params[i, 0]
-            log_sigma = params[i, 1]
-            sigma = max(exp(log_sigma), EPS)
-            diff = y[i] - mu
-            
-            # Log-likelihood: -0.5 * (log(2π) + 2*log_σ + (y-μ)²/σ²)
-            ll -= 0.5 * (log_2pi + 2*log_sigma + diff*diff/(sigma*sigma))
-        
-        return ll
+
+        # Extract column vectors using NumPy slicing
+        cdef cnp.ndarray[DTYPE_t, ndim=1] mu = params[:, 0]
+        cdef cnp.ndarray[DTYPE_t, ndim=1] log_sigma = params[:, 1]
+
+        # Vectorized operations
+        cdef cnp.ndarray[DTYPE_t, ndim=1] sigma = np.maximum(np.exp(log_sigma), EPS)
+        cdef cnp.ndarray[DTYPE_t, ndim=1] diff = y - mu
+
+        # Compute log-likelihood terms in a vectorized manner
+        cdef cnp.ndarray[DTYPE_t, ndim=1] ll_terms = -0.5 * (
+            log_2pi + 2 * log_sigma + (diff * diff) / (sigma * sigma)
+        )
+
+        # Sum all terms
+        return np.sum(ll_terms)
     
     @cython.boundscheck(False)
     cdef double compute_optimal_step_size(self, cnp.ndarray[DTYPE_t, ndim=1] gradients,
