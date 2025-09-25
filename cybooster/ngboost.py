@@ -14,17 +14,22 @@ except ImportError:
 class SkNGBoost(BaseEstimator, RegressorMixin):
     """NGBoost wrapper with optional JAX acceleration"""
     
-    def __init__(self, n_estimators=500, learning_rate=0.01, tol=1e-4, 
+    def __init__(self, n_estimators=500, learning_rate=0.01, 
+    tol=1e-4, early_stopping=True, n_iter_no_change=10,
                  use_jax=True, verbose=False):
         self.use_jax = use_jax and JAX_AVAILABLE
         self.verbose = verbose
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.tol = tol
-        
+        self.early_stopping = early_stopping
+        self.n_iter_no_change = n_iter_no_change
         try:
             from ._ngboost import NGBoost
-            self.ngb = NGBoost(n_estimators, learning_rate, tol)
+            # int n_estimators=500, double learning_rate=0.01, 
+            # double tol=1e-4, bint early_stopping=True, int n_iter_no_change=10, int verbose=1
+            self.ngb = NGBoost(self.n_estimators, self.learning_rate, self.tol, 
+            self.early_stopping, self.n_iter_no_change, int(self.verbose))
         except ImportError:
             warnings.warn("Cython module not available, using fallback")
             self.ngb = self._create_fallback()
@@ -71,7 +76,7 @@ class SkNGBoost(BaseEstimator, RegressorMixin):
     def _create_fallback(self):
         """Simple fallback when Cython unavailable"""
         class SimpleFallback:
-            def __init__(self, n_est, lr, tol):
+            def __init__(self, n_est, lr, tol, early_stopping, n_iter_no_change):
                 self.n_est, self.lr, self.tol = n_est, lr, tol
                 self.fitted = False
             
@@ -86,7 +91,7 @@ class SkNGBoost(BaseEstimator, RegressorMixin):
                 n = X.shape[0]
                 return np.column_stack([np.full(n, self.mean_), np.full(n, np.log(self.std_))])
         
-        return SimpleFallback(self.n_estimators, self.learning_rate, self.tol)
+        return SimpleFallback(self.n_estimators, self.learning_rate, self.tol, self.early_stopping, self.n_iter_no_change)
 
 # ============================================================================
 # Evaluation Utilities

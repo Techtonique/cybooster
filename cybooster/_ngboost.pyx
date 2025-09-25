@@ -10,7 +10,7 @@ cimport cython
 from libc.math cimport exp, log, sqrt, fabs
 from cython.parallel import prange
 from sklearn.tree import DecisionTreeRegressor
-
+from tqdm import tqdm
 
 ctypedef cnp.float64_t DTYPE_t
 
@@ -29,9 +29,10 @@ cdef class NGBoost:
         bint is_fitted
         bint early_stopping
         int n_iter_no_change
+        int verbose
         
     def __init__(self, int n_estimators=500, double learning_rate=0.01, 
-                 double tol=1e-4, bint early_stopping=True, int n_iter_no_change=10):
+                 double tol=1e-4, bint early_stopping=True, int n_iter_no_change=10, int verbose=1):
         if n_estimators <= 0:
             raise ValueError("n_estimators must be positive")
         if learning_rate <= 0:
@@ -45,10 +46,11 @@ cdef class NGBoost:
         self.tol = tol
         self.early_stopping = early_stopping
         self.n_iter_no_change = n_iter_no_change
+        self.verbose = verbose
         self.learners = []
         self.scalers = []
         self.is_fitted = False
-    
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef void compute_natural_gradients(self, cnp.ndarray[DTYPE_t, ndim=2] params, 
@@ -138,7 +140,8 @@ cdef class NGBoost:
         cdef cnp.ndarray[DTYPE_t, ndim=1] predictions
         cdef double scaler
         
-        for iteration in range(self.n_estimators):
+        iterator = tqdm(range(self.n_estimators)) if self.verbose else range(self.n_estimators)
+        for iteration in iterator:
             # Compute natural gradients (in-place)
             self.compute_natural_gradients(params, y, self.natural_grads_)
             
@@ -211,8 +214,10 @@ cdef class NGBoost:
         # Add boosting contributions
         cdef int iteration, param_idx, i
         cdef cnp.ndarray[DTYPE_t, ndim=1] base_pred
+
+        iterator = tqdm(range(len(self.learners))) if self.verbose else range(len(self.learners))
         
-        for iteration in range(len(self.learners)):
+        for iteration in iterator: 
             for param_idx in range(2):
                 base_pred = self.learners[iteration][param_idx].predict(X)
                 for i in range(n_samples):
