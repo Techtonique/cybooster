@@ -74,6 +74,7 @@ class clean(Command):
 
 EXTENSIONS = {
     "_boosterc": {"sources": ["cybooster/_boosterc.pyx"]},
+    "_ngboost": {"sources": ["cybooster/_ngboost.pyx"]}
 }
 
 def get_module_from_sources(sources):
