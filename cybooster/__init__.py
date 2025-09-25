@@ -7,8 +7,11 @@ This package provides:
 """
 
 from ._boosterc import BoosterRegressor, BoosterClassifier
+from ._ngboost import NGBoost
+from .ngboost import SkNGBoost
 from .booster import SkBoosterRegressor, SkBoosterClassifier
 
 __all__ = ["BoosterRegressor", "BoosterClassifier", 
-           "SkBoosterRegressor", "SkBoosterClassifier"]  # Explicit exports
-__version__ = "0.4.0"  # Package version
+           "SkBoosterRegressor", "SkBoosterClassifier",
+           "NGBoost", "SkNGBoost"]  # Explicit exports
+__version__ = "0.5.0"  # Package version
