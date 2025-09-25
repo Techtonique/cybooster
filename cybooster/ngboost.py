@@ -12,11 +12,50 @@ except ImportError:
     jnp = np
 
 class SkNGBRegressor(BaseEstimator, RegressorMixin):
-    """NGBoost wrapper with optional JAX acceleration"""
+    """Scikit-learn compatible NGBoost regressor (Python wrapper).
+
+    This is a thin wrapper around the high-performance Cython implementation
+    exposed as ``cybooster._ngboost.NGBRegressor``. It mirrors a scikit-learn
+    estimator interface while providing an optional JAX acceleration hook for
+    internal linear algebra utilities.
+
+    Parameters
+    ----------
+    obj : Any, optional
+        Placeholder for future objectives (kept for backward compatibility).
+        The current Cython backend expects this positional slot.
+    n_estimators : int, default=500
+        Number of boosting iterations.
+    learning_rate : float, default=0.01
+        Shrinkage applied to each boosting step.
+    tol : float, default=1e-4
+        Tolerance used for early stopping monitoring in the backend.
+    early_stopping : bool, default=True
+        Whether to enable early stopping based on log-likelihood improvement.
+    n_iter_no_change : int, default=10
+        Number of successive iterations with change < ``tol`` to trigger stop.
+    use_jax : bool, default=True
+        If True and JAX is available, enables small JIT-compiled helpers.
+    verbose : bool, default=False
+        If True, prints fitting diagnostics.
+
+    Notes
+    -----
+    - The underlying predictive distribution is Normal with parameters
+      (mu, log_sigma). The backend learns both via natural gradients.
+    - ``predict(X, return_std=False)`` returns point estimates. When
+      ``return_std=True``, it returns a 2D array with columns ``(mu, sigma)``.
+    - Use ``predict_dist(X)`` to directly obtain distribution parameters
+      as ``(mu, sigma)``.
+    """
     
     def __init__(self, obj=None, n_estimators=500, learning_rate=0.01, 
     tol=1e-4, early_stopping=True, n_iter_no_change=10,
                  use_jax=True, verbose=False):
+        """Initialize the NGBoost regressor wrapper.
+
+        See class docstring for parameter details.
+        """
         self.use_jax = use_jax and JAX_AVAILABLE
         self.verbose = verbose
         self.obj = obj 
@@ -39,14 +78,27 @@ class SkNGBRegressor(BaseEstimator, RegressorMixin):
             self._setup_jax()
     
     def _setup_jax(self):
-        """Setup JIT-compiled JAX functions"""
+        """Setup small JIT-compiled helpers when JAX is available."""
         @jit
         def fast_matmul(A, B):
             return jnp.dot(A, B)
         self._fast_matmul = fast_matmul
     
     def fit(self, X, y):
-        """Fit the model"""
+        """Fit the NGBoost model.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Training features.
+        y : array-like of shape (n_samples,)
+            Target values.
+
+        Returns
+        -------
+        self : SkNGBRegressor
+            Fitted estimator.
+        """
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
         
@@ -57,12 +109,40 @@ class SkNGBRegressor(BaseEstimator, RegressorMixin):
         return self.ngb.fit(X, y)
     
     def predict(self, X, return_std=False):
-        """Predict distribution parameters"""
+        """Predict values or distribution parameters.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Input features.
+        return_std : bool, default=False
+            - If False, returns point predictions (mu).
+            - If True, returns an array of shape (n_samples, 2) with
+              columns ``(mu, sigma)``.
+
+        Returns
+        -------
+        ndarray
+            Either ``(n_samples,)`` array of means or ``(n_samples, 2)``
+            with ``(mu, sigma)`` per sample.
+        """
         X = np.asarray(X, dtype=np.float64)
         return self.ngb.predict(X, return_std)
     
     def predict_dist(self, X):
-        """Predict probability distributions"""
+        """Predict Normal distributions for each input sample.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Input features.
+
+        Returns
+        -------
+        list[scipy.stats.rv_continuous]
+            A list of Normal distributions parameterized by predicted
+            ``mu`` and ``sigma`` for each input sample.
+        """
         params = self.predict(X)
         from scipy.stats import norm
         
@@ -75,7 +155,11 @@ class SkNGBRegressor(BaseEstimator, RegressorMixin):
         return distributions
     
     def _create_fallback(self):
-        """Simple fallback when Cython unavailable"""
+        """Create a minimal NumPy-only fallback estimator.
+
+        Used when the Cython extension cannot be imported. It predicts a
+        constant Normal distribution estimated from the training targets.
+        """
         class SimpleFallback:
             def __init__(self, n_est, lr, tol, early_stopping, n_iter_no_change):
                 self.n_est, self.lr, self.tol = n_est, lr, tol
