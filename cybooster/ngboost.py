@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Optional
 import warnings
-
+from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 
 try:
     import jax.numpy as jnp
@@ -11,7 +11,7 @@ except ImportError:
     JAX_AVAILABLE = False
     jnp = np
 
-class SkNGBoost:
+class SkNGBoost(BaseEstimator, RegressorMixin):
     """NGBoost wrapper with optional JAX acceleration"""
     
     def __init__(self, n_estimators=500, learning_rate=0.01, tol=1e-4, 
