@@ -14,4 +14,4 @@ from .booster import SkBoosterRegressor, SkBoosterClassifier
 __all__ = ["BoosterRegressor", "BoosterClassifier", 
            "SkBoosterRegressor", "SkBoosterClassifier",
            "NGBRegressor", "SkNGBRegressor"]  # Explicit exports
-__version__ = "0.6.0"  # Package version
+__version__ = "0.7.0"  # Package version

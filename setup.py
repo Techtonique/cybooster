@@ -31,7 +31,7 @@ class bdist_wheel(_bdist_wheel):
 
 CYTHON_MIN_VERSION = version.parse("3.0.10")
 
-__version__ = "0.4.0"
+__version__ = "0.6.0"
 
 class clean(Command):
     user_options = [("all", "a", "")]

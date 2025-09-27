@@ -34,10 +34,15 @@ class SkNGBRegressor(BaseEstimator, RegressorMixin):
         Whether to enable early stopping based on log-likelihood improvement.
     n_iter_no_change : int, default=10
         Number of successive iterations with change < ``tol`` to trigger stop.
+    feature_engineering : bool, default=False
+        If True, enables feature engineering through nnetsauce.
     use_jax : bool, default=True
         If True and JAX is available, enables small JIT-compiled helpers.
     verbose : bool, default=False
         If True, prints fitting diagnostics.
+    **kwargs: dict
+        Additional parameters if `feature_engineering` is True.
+        `nnetsauce.CustomRegressor` parameters can be passed here.
 
     Notes
     -----
@@ -50,8 +55,8 @@ class SkNGBRegressor(BaseEstimator, RegressorMixin):
     """
     
     def __init__(self, obj=None, n_estimators=500, learning_rate=0.01, 
-    tol=1e-4, early_stopping=True, n_iter_no_change=10,
-                 use_jax=True, verbose=False):
+    tol=1e-4, early_stopping=True, n_iter_no_change=10, feature_engineering=False,
+                 use_jax=True, verbose=False, **kwargs):
         """Initialize the NGBoost regressor wrapper.
 
         See class docstring for parameter details.
@@ -64,12 +69,14 @@ class SkNGBRegressor(BaseEstimator, RegressorMixin):
         self.tol = tol
         self.early_stopping = early_stopping
         self.n_iter_no_change = n_iter_no_change
+        self.feature_engineering = feature_engineering
+        self.kwargs = kwargs
         try:
             from ._ngboost import NGBRegressor
             # int n_estimators=500, double learning_rate=0.01, 
             # double tol=1e-4, bint early_stopping=True, int n_iter_no_change=10, int verbose=1
             self.ngb = NGBRegressor(self.obj, self.n_estimators, self.learning_rate, self.tol, 
-            self.early_stopping, self.n_iter_no_change, int(self.verbose))
+            self.early_stopping, self.n_iter_no_change, int(self.verbose)
         except ImportError:
             warnings.warn("Cython module not available, using fallback")
             self.ngb = self._create_fallback()
