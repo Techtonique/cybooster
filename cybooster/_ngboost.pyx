@@ -35,11 +35,10 @@ cdef class NGBRegressor:
         int n_iter_no_change
         int verbose
         int feature_engineering
-        dict kwargs
         
     def __init__(self, object obj=None, int n_estimators=500, double learning_rate=0.01, 
                  double tol=1e-4, bint early_stopping=True, int n_iter_no_change=10, int verbose=1, 
-                 feature_engineering=0, **kwargs):
+                 feature_engineering=0):
         if n_estimators <= 0:
             raise ValueError("n_estimators must be positive")
         if learning_rate <= 0:
@@ -59,7 +58,6 @@ cdef class NGBRegressor:
         self.scalers = []
         self.is_fitted = False
         self.feature_engineering = feature_engineering  
-        self.kwargs = kwargs       
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -182,14 +180,21 @@ cdef class NGBRegressor:
             for param_idx in range(2):
                 # Fit base learner
                 if self.obj is None: 
-                    learner = DecisionTreeRegressor(
-                        max_depth=3, 
-                        random_state=42 + iteration,  # Different seed each iteration
-                        min_samples_leaf=max(1, self.n_samples // 100)  # Adaptive min samples
-                    )
+                    if self.feature_engineering:
+                        learner = ns.CustomRegressor(DecisionTreeRegressor(
+                            max_depth=3, 
+                            random_state=42 + iteration,  # Different seed each iteration
+                            min_samples_leaf=max(1, self.n_samples // 100)  # Adaptive min samples
+                        ))
+                    else: 
+                        learner = DecisionTreeRegressor(
+                            max_depth=3, 
+                            random_state=42 + iteration,  # Different seed each iteration
+                            min_samples_leaf=max(1, self.n_samples // 100)  # Adaptive min samples
+                        )
                 else: 
                     if self.feature_engineering:
-                        learner = deepcopy(ns.CustomRegressor(self.obj, self.kwargs))
+                        learner = deepcopy(ns.CustomRegressor(self.obj))
                     else:
                         learner = deepcopy(self.obj)
                     try: 
