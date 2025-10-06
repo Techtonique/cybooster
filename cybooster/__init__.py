@@ -8,10 +8,12 @@ This package provides:
 
 from ._boosterc import BoosterRegressor, BoosterClassifier
 from ._ngboost import NGBRegressor
-from .ngboost import SkNGBRegressor
+from ._ngboostclf import NGBClassifier
+from .ngboost import SkNGBRegressor, SkNGBClassifier
 from .booster import SkBoosterRegressor, SkBoosterClassifier
 
 __all__ = ["BoosterRegressor", "BoosterClassifier", 
            "SkBoosterRegressor", "SkBoosterClassifier",
-           "NGBRegressor", "SkNGBRegressor"]  # Explicit exports
-__version__ = "0.6.0"  # Package version
+           "NGBRegressor", "NGBClassifier", 
+           "SkNGBRegressor", "SkNGBClassifier"]  # Explicit exports
+__version__ = "0.8.0"  # Package version

@@ -6,7 +6,8 @@ requires = [
     "Cython>=3.0.10",
     "numpy>=2.0.0",
     "pandas>=2.0.0",
-    "tqdm"
+    "tqdm",
+    "nnetsauce"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -19,7 +20,7 @@ authors = [
 ]
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
-version = "0.5.0"
+version = "0.7.0"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -42,6 +43,7 @@ dependencies = [
     "jax>=0.4.0",
     "tqdm>=4.50.0",
     "pandas>=2.0.0",
+    "nnetsauce"
 ]
 
 [project.urls]
@@ -53,13 +55,12 @@ Homepage = "https://github.com/Techtonique/cybooster"
 dev = [
     "black[jupyter]",
     "build",
-    "Cython>=3.0.10",
     "pytest",
     "ruff",
     "setuptools-scm>=8",
     "black[jupyter]",
     "build",
-    "Cython>=3.0.10",
+    "Cython",
     "pytest",
     "ruff",
     "setuptools-scm>=8",

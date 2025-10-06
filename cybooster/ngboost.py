@@ -1,4 +1,5 @@
 import numpy as np
+import nnetsauce as ns 
 from typing import Optional
 import warnings
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
@@ -34,6 +35,8 @@ class SkNGBRegressor(BaseEstimator, RegressorMixin):
         Whether to enable early stopping based on log-likelihood improvement.
     n_iter_no_change : int, default=10
         Number of successive iterations with change < ``tol`` to trigger stop.
+    feature_engineering : bool, default=False
+        If True, enables feature engineering through nnetsauce.
     use_jax : bool, default=True
         If True and JAX is available, enables small JIT-compiled helpers.
     verbose : bool, default=False
@@ -50,7 +53,7 @@ class SkNGBRegressor(BaseEstimator, RegressorMixin):
     """
     
     def __init__(self, obj=None, n_estimators=500, learning_rate=0.01, 
-    tol=1e-4, early_stopping=True, n_iter_no_change=10,
+    tol=1e-4, early_stopping=True, n_iter_no_change=10, feature_engineering=False,
                  use_jax=True, verbose=False):
         """Initialize the NGBoost regressor wrapper.
 
@@ -64,12 +67,13 @@ class SkNGBRegressor(BaseEstimator, RegressorMixin):
         self.tol = tol
         self.early_stopping = early_stopping
         self.n_iter_no_change = n_iter_no_change
+        self.feature_engineering = feature_engineering
+       
         try:
             from ._ngboost import NGBRegressor
-            # int n_estimators=500, double learning_rate=0.01, 
-            # double tol=1e-4, bint early_stopping=True, int n_iter_no_change=10, int verbose=1
             self.ngb = NGBRegressor(self.obj, self.n_estimators, self.learning_rate, self.tol, 
-            self.early_stopping, self.n_iter_no_change, int(self.verbose))
+            self.early_stopping, self.n_iter_no_change, int(self.verbose), 
+            int(feature_engineering))
         except ImportError:
             warnings.warn("Cython module not available, using fallback")
             self.ngb = self._create_fallback()
@@ -246,3 +250,27 @@ def plot_results(y_true, pred_dists, X_test=None):
         
     except ImportError:
         print("Matplotlib not available for plotting")
+
+
+class SkNGBClassifier(BaseEstimator, ClassifierMixin):
+    def __init__(self, obj=None, n_estimators=500, learning_rate=0.01, 
+                 tol=1e-4, early_stopping=True, n_iter_no_change=10, feature_engineering=False,
+                 use_jax=True, verbose=False):
+        # Initialize the base regressor, or modify based on your needs
+        self.model = ns.SimpleMultitaskClassifier(obj=SkNGBRegressor(obj=obj, 
+        n_estimators=n_estimators, learning_rate=learning_rate, 
+        tol=tol, early_stopping=early_stopping, n_iter_no_change=n_iter_no_change, 
+        feature_engineering=feature_engineering, use_jax=use_jax, verbose=verbose))
+    
+    def fit(self, X, y):
+        # Implement fit method
+        self.model.fit(X, y)
+        return self
+    
+    def predict(self, X):
+        # Implement predict method
+        return self.model.predict(X)
+    
+    def predict_proba(self, X):
+        # Implement predict method
+        return self.model.predict_proba(X)
