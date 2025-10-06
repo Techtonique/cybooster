@@ -20,7 +20,7 @@ authors = [
 ]
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
-version = "0.6.0"
+version = "0.7.0"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -55,13 +55,12 @@ Homepage = "https://github.com/Techtonique/cybooster"
 dev = [
     "black[jupyter]",
     "build",
-    "Cython>=3.0.10",
     "pytest",
     "ruff",
     "setuptools-scm>=8",
     "black[jupyter]",
     "build",
-    "Cython>=3.0.10",
+    "Cython",
     "pytest",
     "ruff",
     "setuptools-scm>=8",
