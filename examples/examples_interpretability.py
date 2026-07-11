@@ -65,6 +65,7 @@ def run_example(X, y, cols, name, top_k_features=3,
     print(f"Test MAE: {mean_absolute_error(yte, pred):.4f}")
     print(f"Get sensitivities: \n {model.get_sensitivities(Xte, columns=cols)}")
     print(f"Get importance: \n {model.get_feature_importances(Xte, columns=cols)}")
+    print(f"Get summary: \n {model.get_summary(Xte, columns=cols)}")
 
     # --- closed-form Integrated Gradients + completeness check ---
     ig = model.get_integrated_gradients(Xte, columns=cols)
